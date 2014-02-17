@@ -63,7 +63,7 @@ void recordAudioPipeline(char * source, int rate, int channel, char * format, ch
 			g_printerr("Elements could not be linked");
 			gst_object_unref(data->pipeline);
 		}
-
+		
 		gst_caps_unref(caps);
 	}else{
 		data->filter = gst_element_factory_make("audioconvert", "convert");
