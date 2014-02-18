@@ -206,7 +206,7 @@ void createAudioPipeline(char * source, int rate, int channel, char * format, ch
 
 }
 
-int main(int argc, char *argv[]) {
+int audio_main(int argc, char *argv[]) {
 	gst_init(&argc, &argv);
 
 	//call to audio pipeline creator function
