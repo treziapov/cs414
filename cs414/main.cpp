@@ -133,33 +133,6 @@ static void sliderChange_event(GtkRange *range, VideoData *data) {
 		(gint64)(value * GST_SECOND));
 }
 
-/*
-	Callbacks for option entry
-*/
-static void updateWidth_callback(GtkWidget *widget, VideoData * data)
-{
-	char *c = GTK_ENTRY(widget)->text;
-	data->width = charPointerToInteger(c);
-}
-
-static void updateHeight_callback(GtkWidget *widget, VideoData * data)
-{
-	char *c = GTK_ENTRY(widget)->text;
-	data->height = charPointerToInteger(c);
-}
-
-static void updateRate_callback(GtkWidget *widget, VideoData * data)
-{
-	char *c = GTK_ENTRY(widget)->text;
-	data->recordingRate = charPointerToInteger(c);
-}
-
-static void updateEncodingPlugin_callback(GtkWidget *widget, VideoData * data)
-{
-	char *c = gtk_combo_box_get_active_text(GTK_COMBO_BOX(widget));
-	data->encoderPlugin = string(c);
-}
-
 /* 
 	Set up initial UI 
 */
@@ -199,23 +172,14 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MJPEG_ENCODER);
 	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MPEG4_ENCODER);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(videoEncoding_option), 0);
-	// GList * encoding_list = NULL;
-	/*encoding_list = g_list_append(encoding_list, MJPEG_ENCODER);
-	encoding_list = g_list_append(encoding_list, MPEG4_ENCODER);
-	gtk_combo_set_popdown_strings (GTK_COMBO	 (videoEncoding_option), encoding_list);*/
-	//gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (videoEncoding_option)->entry), videoData->encoderPlugin.c_str());
-	//g_list_free(encoding_list);
-	//g_signal_connect(G_OBJECT(videoEncoding_option), "activate", G_CALLBACK(updateEncodingPlugin_callback), videoData);
 
 	videoWidth_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoWidth_entry), integerToString(videoData->width).c_str());
 	//g_signal_connect_after(GTK_ENTRY(videoWidth_entry), "insert-text", G_CALLBACK(updateWidth_callback), videoData);
 	videoHeight_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoHeight_entry), integerToString(videoData->height).c_str());
-	//g_signal_connect_after(GTK_ENTRY(videoHeight_entry), "insert-text", G_CALLBACK(updateHeight_callback), videoData);
 	videoRate_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), integerToString(videoData->recordingRate).c_str());
-	//g_signal_connect_after(GTK_ENTRY(videoRate_entry), "insert-text", G_CALLBACK(updateRate_callback), videoData);
 
 	// Video control callbacks
 	startCameraVideoCapture_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
@@ -238,17 +202,17 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 
 	// Audio control callbacks
 	audio_start_rec = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
-	g_signal_connect(G_OBJECT (audio_start_rec), "activate", G_CALLBACK (audio_start_recording), audioData);
+	g_signal_connect(G_OBJECT (audio_start_rec), "clicked", G_CALLBACK (audio_start_recording), audioData);
 	audio_stop_rec = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
-	g_signal_connect(G_OBJECT (audio_stop_rec), "activate", G_CALLBACK (audio_stop_recording), audioData);
+	g_signal_connect(G_OBJECT (audio_stop_rec), "clicked", G_CALLBACK (audio_stop_recording), audioData);
 	audio_start_play = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
-	g_signal_connect(G_OBJECT (audio_start_play), "activate", G_CALLBACK (audio_start_playback), audioData);
+	g_signal_connect(G_OBJECT (audio_start_play), "clicked", G_CALLBACK (audio_start_playback), audioData);
 	audio_stop_play = gtk_button_new_from_stock (GTK_STOCK_MEDIA_PAUSE);
-	g_signal_connect(G_OBJECT (audio_stop_play), "activate", G_CALLBACK (audio_stop_playback), audioData);
+	g_signal_connect(G_OBJECT (audio_stop_play), "clicked", G_CALLBACK (audio_stop_playback), audioData);
 
 	// Layout
 	videoControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Play Video File:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Play Video File:"), FALSE, FALSE, 20);
 	gtk_box_pack_start (GTK_BOX (videoControls), playVideoFile_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), rewindVideoFile_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), pauseVideoFile_button, FALSE, FALSE, 2);
@@ -258,13 +222,13 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	gtk_box_pack_start (GTK_BOX (videoControls), stopCameraVideoCapture_button, FALSE, FALSE, 2);
 	//gtk_box_pack_start (GTK_BOX (videoControls), videoData->slider, FALSE, FALSE, 100);
 	
-	audioControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (audioControls), gtk_label_new("Audio Playback:"), FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (audioControls), audio_start_play, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (audioControls), audio_stop_play, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (audioControls), gtk_label_new("Camera Audio:"), FALSE, FALSE, 20);
-	gtk_box_pack_start (GTK_BOX (audioControls), audio_start_rec, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (audioControls), audio_stop_rec, FALSE, FALSE, 2);
+	//audioControls = gtk_hbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Audio Playback:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControls), audio_start_play, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), audio_stop_play, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Camera Audio:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControls), audio_start_rec, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), audio_stop_rec, FALSE, FALSE, 2);
    
 	options = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Width:"), FALSE, FALSE, 0);
@@ -283,7 +247,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	mainBox = gtk_vbox_new (FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (mainBox), mainHBox, TRUE, TRUE, 0);
 	gtk_box_pack_start (GTK_BOX (mainBox), videoControls, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (mainBox), audioControls, FALSE, FALSE, 1);
+	//gtk_box_pack_start (GTK_BOX (mainBox), audioControls, FALSE, FALSE, 1);
 	gtk_container_add (GTK_CONTAINER (mainWindow), mainBox);
 	gtk_window_set_default_size (GTK_WINDOW (mainWindow), 1280, 960);
    
@@ -362,6 +326,7 @@ void gstreamerStartCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
 void gstreamerStopCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
 {
 	gstreamerStop(videoData);
+	videoData->playerMode = Initial;
 }
 
 void gstreamerForwardVideoFile(GtkWidget *widget, VideoData *videoData)
