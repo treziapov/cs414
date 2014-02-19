@@ -35,13 +35,27 @@ static void setVideoWindow(GtkWidget *widget, VideoData *data)
 /* Set up initial UI */
 void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData)
 {
+	GtkWidget *options = gtk_combo_new();
 	GtkWidget *vbox;
 	GtkWidget *window, *video_window;
 	GtkWidget *menubar, *recordermenu, *playermenu, * audioplayermenu;
 	GtkWidget *record, *play, *start_rec, *stop_rec, *start_play, *stop_play, *pause, *rewind, *forward, *audio_start_rec, *audio_stop_rec, *audio_start_play, *audio_stop_play, *play_audio;
 
 	gtk_init(&argc, &argv);
-   
+    
+
+	GList *glist = NULL;
+
+    glist = g_list_append (glist, "String 1");
+    glist = g_list_append (glist, "String 2");
+    glist = g_list_append (glist, "String 3"); 
+    glist = g_list_append (glist, "String 4");
+
+	//free(glist);
+
+    gtk_combo_set_popdown_strings (GTK_COMBO (options), glist);
+	gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (options)->entry), "String 1");
+
 	video_window = gtk_drawing_area_new();
 	gtk_widget_set_double_buffered(video_window, FALSE);
 	g_signal_connect(video_window, "realize", G_CALLBACK (setVideoWindow), videoData);
@@ -93,6 +107,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	gtk_menu_shell_append(GTK_MENU_SHELL(playermenu), forward);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), play);
 	gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 3);
+	gtk_box_pack_start(GTK_BOX(vbox), options, FALSE, FALSE,3);
 	gtk_box_pack_start(GTK_BOX (vbox), video_window, TRUE, TRUE, 0);
 	
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(play_audio), audioplayermenu);
