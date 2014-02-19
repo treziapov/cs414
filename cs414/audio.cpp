@@ -1,20 +1,16 @@
 #include <gst/gst.h>
+#include <cstring>
+#include <stdio.h>
+#include <gst/interfaces/xoverlay.h>
+#include <gtk-2.0\gtk\gtk.h>
+#include <gdk/gdk.h>
+#include <gdk/gdkwin32.h>
 
-typedef struct AudioData{
-	GstElement * pipeline;
-	GstElement * source;
-	GstElement * filter;
-	GstElement * muxer;
-	GstElement * demuxer;
-	GstElement * encoder;
-	GstElement * decoder;
-	GstElement * sink;
-} AudioData;
+#include "audio.h"
 
 //Handles the demuxer's new pad signal
 static void addPadSignalHandler(GstElement * element, GstPad * newPad, AudioData * data){
 	if(element == data->demuxer){
-		g_printerr("signal recieved\n");
 
 		GstPad * decoderPad = gst_element_get_static_pad(data->decoder, "sink");
 		GstPadLinkReturn ret;
@@ -28,11 +24,30 @@ static void addPadSignalHandler(GstElement * element, GstPad * newPad, AudioData
 		ret = gst_pad_link(newPad, decoderPad);
 		if(GST_PAD_LINK_FAILED(ret)){
 			g_print("Could not link pads\n");
-		}else{
-			g_print("Linked demuxer to decoder\n");
 		}
 
 		gst_object_unref(decoderPad);
+	}
+}
+
+char * getFileType(char * file){
+	int length = strlen(file);
+
+	if(length < 4){
+		g_printerr("Invalid file type\n");
+		return NULL;
+	}else if(strcmp(&file[length - 4], ".ogg") == 0){
+		return "vorbis";
+	}else if(strcmp(&file[length - 4], ".raw") == 0){
+		return "raw";
+	}else if(strcmp(&file[length - 5], ".ulaw") == 0){
+		return "mulaw";
+	}else if(strcmp(&file[length - 5], ".alaw") == 0){
+		return "alaw";
+	}else{
+		printf("%s\n", &file[length - 5]);
+		g_printerr("Invalid file type\n");
+		return NULL;
 	}
 }
 
@@ -59,11 +74,59 @@ void recordAudioPipeline(char * source, int rate, int channel, char * format, ch
 
 		caps = gst_caps_new_simple("audio/x-raw-int", "rate", G_TYPE_INT, rate, "channels", G_TYPE_INT, channel, "endianness", G_TYPE_INT, 1234, "signed", G_TYPE_BOOLEAN, (gboolean)TRUE, NULL);
 
-		if (gst_element_link (data->source, data->filter) != (gboolean)TRUE || gst_element_link_filtered(data->filter, data->sink, caps) != (gboolean)TRUE) {
+		if (gst_element_link(data->source, data->filter) != (gboolean)TRUE || gst_element_link_filtered(data->filter, data->sink, caps) != (gboolean)TRUE) {
 			g_printerr("Elements could not be linked");
 			gst_object_unref(data->pipeline);
 		}
 		
+		gst_caps_unref(caps);
+	}else if(format == "mulaw"){
+		data->filter = gst_element_factory_make("audioconvert", "convert");
+		data->encoder = gst_element_factory_make("mulawenc", "encoder");
+		data->sink = gst_element_factory_make("filesink", "sink");
+
+		data->pipeline = gst_pipeline_new("audio_pipeline");
+
+		if(!data->pipeline || !data->source || !data->filter || !data->encoder || !data->sink){
+			g_printerr("Elements could not be created");
+			return;
+		}
+
+		g_object_set(G_OBJECT(data->sink), "location", filepath, NULL);
+
+		gst_bin_add_many(GST_BIN(data->pipeline), data->source, data->filter, data->encoder, data->sink, NULL);
+
+		caps = gst_caps_new_simple("audio/x-raw-int", "rate", G_TYPE_INT, rate, "channels", G_TYPE_INT, channel, NULL);
+
+		if(gst_element_link(data->source, data->filter) != (gboolean)TRUE || gst_element_link_filtered(data->filter, data->encoder, caps) != (gboolean)TRUE || gst_element_link(data->encoder, data->sink) != (gboolean)TRUE){
+			g_printerr("Elements could not be linked");
+			gst_object_unref(data->pipeline);
+		}
+
+		gst_caps_unref(caps);
+	}else if(format == "alaw"){
+		data->filter = gst_element_factory_make("audioconvert", "convert");
+		data->encoder = gst_element_factory_make("alawenc", "encoder");
+		data->sink = gst_element_factory_make("filesink", "sink");
+
+		data->pipeline = gst_pipeline_new("audio_pipeline");
+
+		if(!data->pipeline || !data->source || !data->filter || !data->encoder || !data->sink){
+			g_printerr("Elements could not be created");
+			return;
+		}
+
+		g_object_set(G_OBJECT(data->sink), "location", filepath, NULL);
+
+		gst_bin_add_many(GST_BIN(data->pipeline), data->source, data->filter, data->encoder, data->sink, NULL);
+
+		caps = gst_caps_new_simple("audio/x-raw-int", "rate", G_TYPE_INT, rate, "channels", G_TYPE_INT, channel, NULL);
+
+		if(gst_element_link(data->source, data->filter) != (gboolean)TRUE || gst_element_link_filtered(data->filter, data->encoder, caps) != (gboolean)TRUE || gst_element_link(data->encoder, data->sink) != (gboolean)TRUE){
+			g_printerr("Elements could not be linked");
+			gst_object_unref(data->pipeline);
+		}
+
 		gst_caps_unref(caps);
 	}else{
 		data->filter = gst_element_factory_make("audioconvert", "convert");
@@ -120,6 +183,48 @@ void playAudioPipeline(char * format, char * filepath, int rate, int channel, Au
 		}
 
 		gst_caps_unref(caps);
+	}else if(format == "mulaw"){
+		data->decoder = gst_element_factory_make("mulawdec", "decoder");
+		data->sink = gst_element_factory_make("directsoundsink", "sink");
+
+		data->pipeline = gst_pipeline_new("audio_pipeline");
+
+		if(!data->pipeline || !data->source || !data->decoder || !data->sink){
+			g_printerr("Elements could not be created");
+			return;
+		}
+
+		gst_bin_add_many(GST_BIN(data->pipeline), data->source, data->decoder, data->sink, NULL);
+
+		caps = gst_caps_new_simple("audio/x-mulaw", "rate", G_TYPE_INT, rate, "channels", G_TYPE_INT, channel, NULL);
+
+		if(gst_element_link_filtered(data->source, data->decoder, caps) != (gboolean)TRUE || gst_element_link(data->decoder, data->sink) != (gboolean)TRUE){
+			g_printerr("Elements could not be linked");
+			gst_object_unref(data->pipeline);
+		}
+
+		gst_caps_unref(caps);
+	}else if(format == "alaw"){
+		data->decoder = gst_element_factory_make("alawdec", "decoder");
+		data->sink = gst_element_factory_make("directsoundsink", "sink");
+
+		data->pipeline = gst_pipeline_new("audio_pipeline");
+
+		if(!data->pipeline || !data->source || !data->decoder || !data->sink){
+			g_printerr("Elements could not be created");
+			return;
+		}
+
+		gst_bin_add_many(GST_BIN(data->pipeline), data->source, data->decoder, data->sink, NULL);
+
+		caps = gst_caps_new_simple("audio/x-alaw", "rate", G_TYPE_INT, rate, "channels", G_TYPE_INT, channel, NULL);
+
+		if(gst_element_link_filtered(data->source, data->decoder, caps) != (gboolean)TRUE || gst_element_link(data->decoder, data->sink) != (gboolean)TRUE){
+			g_printerr("Elements could not be linked");
+			gst_object_unref(data->pipeline);
+		}
+
+		gst_caps_unref(caps);
 	}else{
 		data->demuxer = gst_element_factory_make("oggdemux", "demuxer");
 		data->decoder = gst_element_factory_make("vorbisdec", "decoder");
@@ -145,27 +250,26 @@ void playAudioPipeline(char * format, char * filepath, int rate, int channel, Au
 
 //Function to call for audio pipeline creation
 //Calls helper functions based on the inputs and outputs
-void createAudioPipeline(char * source, int rate, int channel, char * format, char * sink){
-	AudioData data;
+void createAudioPipeline(char * source, int rate, int channel, char * format, char * sink, AudioData * data){
 	GstBus * bus;
 	GstMessage * msg;
 	GstStateChangeReturn ret;
 
 	if(source == "dshowaudiosrc"){
-		recordAudioPipeline(source, rate, channel, format, sink, &data);
+		recordAudioPipeline(source, rate, channel, format, sink, data);
 	}else{
-		playAudioPipeline(format, source, rate, channel, &data);
+		playAudioPipeline(format, source, rate, channel, data);
 	}
 
-	if(data.pipeline == NULL){
+	if(data->pipeline == NULL){
 		g_printerr("Failed to create pipeline");
 		return;
 	}
 
-	ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);
+	ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
 	if (ret == GST_STATE_CHANGE_FAILURE) {
 		g_printerr("Unable to set the pipeline to the playing state.\n");
-		gst_object_unref(data.pipeline);
+		gst_object_unref(data->pipeline);
 		return;
 	}
 
@@ -174,50 +278,103 @@ void createAudioPipeline(char * source, int rate, int channel, char * format, ch
 	}else{
 		g_print("playing...\n");
 	}
-  
-	bus = gst_element_get_bus(data.pipeline);
+
+	/*
+	bus = gst_element_get_bus(data->pipeline);
 	msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
   
-	if (msg != NULL) {
-		GError * err;
-		gchar * debug_info;
-    
-		switch (GST_MESSAGE_TYPE (msg)) {
-			case GST_MESSAGE_ERROR:
-				gst_message_parse_error(msg, &err, &debug_info);
-				g_printerr("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-				g_printerr("Debugging information: %s\n", debug_info ? debug_info : "none");
-				g_clear_error(&err);
-				g_free(debug_info);
-				break;
-			case GST_MESSAGE_EOS:
-				g_print("End-Of-Stream reached.\n");
-				break;
-			default:
-				g_printerr("Unexpected message received.\n");
-				break;
+	//bool terminate = false;
+	//while(!terminate){
+		if (msg != NULL) {
+			GError * err;
+			gchar * debug_info;
+		
+			switch (GST_MESSAGE_TYPE (msg)) {
+				case GST_MESSAGE_ERROR:
+					gst_message_parse_error(msg, &err, &debug_info);
+					g_printerr("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+					g_printerr("Debugging information: %s\n", debug_info ? debug_info : "none");
+					g_clear_error(&err);
+					g_free(debug_info);
+					//terminate = true;
+					break;
+				case GST_MESSAGE_EOS:
+					g_print("End-Of-Stream reached.\n");
+					//terminate = true;
+					break;
+				case GST_MESSAGE_STATE_CHANGED:
+					//terminate = true;
+					break;
+				default:
+					g_printerr("Unexpected message received.\n");
+					break;
+			}
+			gst_message_unref(msg);
 		}
-		gst_message_unref(msg);
-	}
+	//}
   
 	gst_object_unref(bus);
-	gst_element_set_state(data.pipeline, GST_STATE_NULL);
-	gst_object_unref(data.pipeline);
+	gst_element_set_state(data->pipeline, GST_STATE_NULL);
+	gst_object_unref(data->pipeline);*/
 
 }
 
-int audio_main(int argc, char *argv[]) {
-	gst_init(&argc, &argv);
+void stopAudioPipeline(AudioData * data){
+	gst_element_set_state(data->pipeline, GST_STATE_READY);
+	gst_element_set_state(data->pipeline, GST_STATE_NULL);
+	gst_object_unref(data->pipeline);
+}
 
-	//call to audio pipeline creator function
-	//Parameters:
-	//1. source (string) - dshowaudiosrc for recording, file name and location for playback
-	//2. bitrate (int) - Desired bitrate to record at, if user does not specify default to 44100
-	//3. channels (int) - Desired number of channels, if user does not specify default to 1
-	//4. format (string) - Desired format to either play or record (might change to NULL for playback as I can write my own function to read the file type)
-	//5. sink (string) - NULL for playback, desired file location and name for recording
-	createAudioPipeline("M:/music.ogg", 44100, 2, "vorbis", NULL);
+void audio_start_recording(GtkWidget* source, gpointer* data){
+	//request file name
+	printf("Enter the desired filename (include extensions): ");
+	char filename[256];
+	fgets(filename, 256, stdin);
+	filename[strlen(filename) - 1] = '\0';
+	
+	char * filetype = getFileType(filename);
+	if(filetype == NULL){
+		return;
+	}
 
-	while(1);
-	return 0;
+	printf("Enter the desired bitrate (default is 44100): ");
+	char bitrateBuffer[256];
+	fgets(bitrateBuffer, 256, stdin);
+
+	int rate = atoi(bitrateBuffer);
+	if(rate < 8000 || rate > 44100){
+		printf("Invalid Bitrate. Defaulting to 44100.\n");
+		rate = 44100;
+	}
+	
+	//Create the audio pipeline
+	createAudioPipeline("dshowaudiosrc", rate, 1, filetype, filename, (AudioData *)data);
+}
+
+void audio_stop_recording(GtkWidget * source, gpointer * data){
+	//stop the audio pipeline
+	stopAudioPipeline((AudioData *)data);
+	printf("Stopped recording audio\n");
+}
+
+void audio_start_playback(GtkWidget * source, gpointer * data){
+	//request file name
+	printf("Enter the desired filename (include extensions): ");
+	char filename[256];
+	fgets(filename, 256, stdin);
+	filename[strlen(filename) - 1] = '\0';
+	
+	char * filetype = getFileType(filename);
+	if(filetype == NULL){
+		return;
+	}
+
+	//Create the audio pipeline
+	createAudioPipeline(filename, 44100, 1, filetype, "directsoundsink", (AudioData *)data);
+}
+
+void audio_stop_playback(GtkWidget * source, gpointer * data){
+	//Stop the audio pipeline
+	stopAudioPipeline((AudioData *)data);
+	printf("Stopped playing audio\n");
 }
