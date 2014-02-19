@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+#include "audio.h"
+
 #define MJPEG "jpegenc"
 #define MPEG4 "ffenc_mpeg4"
 #define AVI_MUXER "avimux"
@@ -123,12 +125,12 @@ static gboolean handle_keyboard (GIOChannel *source, GIOCondition cond, VideoDat
 }
 
 /* Set up initial UI */
-void gtkSetup(int argc, char *argv[], VideoData *videoData)
+void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *vbox;
 	GtkWidget *window, *video_window;
 	GtkWidget *menubar, *recordermenu, *playermenu;
-	GtkWidget *record, *play, *start_rec, *stop_rec, *start_play, *stop_play, *pause, *rewind, *forward;
+	GtkWidget *record, *play, *start_rec, *stop_rec, *start_play, *stop_play, *pause, *rewind, *forward, *audio_start_rec, *audio_stop_rec, *audio_start_play, *audio_stop_play, *play_audio;
 
 	gtk_init(&argc, &argv);
    
@@ -147,6 +149,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData)
 	menubar = gtk_menu_bar_new();
 	recordermenu = gtk_menu_new();
 	playermenu = gtk_menu_new();
+	audioplayermenu = gtk_menu_new();
 
 	record = gtk_menu_item_new_with_label("Recorder");
 	play = gtk_menu_item_new_with_label("Player");
@@ -157,10 +160,21 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData)
 	pause = gtk_menu_item_new_with_label("Pause/Resume Playing");
 	rewind = gtk_menu_item_new_with_label("Rewind Video");
 	forward = gtk_menu_item_new_with_label("Fast Forward Video");
+	audio_start_rec = gtk_menu_item_new_with_label("Start Recording Audio");
+	g_signal_connect(G_OBJECT (audio_start_rec), "activate", G_CALLBACK (audio_start_recording), audioData);
+	audio_stop_rec = gtk_menu_item_new_with_label("Stop Recording Audio");
+	g_signal_connect(G_OBJECT (audio_stop_rec), "activate", G_CALLBACK (audio_stop_recording), audioData);
+	audio_start_play = gtk_menu_item_new_with_label("Start Playing An Audio File");
+	g_signal_connect(G_OBJECT (audio_start_play), "activate", G_CALLBACK (audio_start_playback), audioData);
+	audio_stop_play = gtk_menu_item_new_with_label("Stop Playing An Audio File");
+	g_signal_connect(G_OBJECT (audio_stop_play), "activate", G_CALLBACK (audio_stop_playback), audioData);
+	play_audio = gtk_menu_item_new_with_label("Play Audio");
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(record), recordermenu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(recordermenu), start_rec);
 	gtk_menu_shell_append(GTK_MENU_SHELL(recordermenu), stop_rec);
+	gtk_menu_shell_append(GTK_MENU_SHELL(recordermenu), audio_start_rec);
+	gtk_menu_shell_append(GTK_MENU_SHELL(recordermenu), audio_stop_rec);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), record);
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(play), playermenu);
@@ -172,6 +186,11 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData)
 	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), play);
 	gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 3);
 	gtk_box_pack_start(GTK_BOX (vbox), video_window, TRUE, TRUE, 0);
+	
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(play_audio), audioplayermenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(audioplayermenu), audio_start_play);
+	gtk_menu_shell_append(GTK_MENU_SHELL(audioplayermenu), audio_stop_play);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menubar), play_audio);
 
 	g_signal_connect_swapped(G_OBJECT(window), "destroy",
 		G_CALLBACK(gtk_main_quit), NULL);
@@ -321,10 +340,12 @@ int main(int argc, char *argv[])
 
 	VideoData videoData;
 	initializeVideoData(&videoData);
+	
+	AudioData audioData;
 
 	gstreamerSetup(argc, argv, &videoData);
 	gstreamerBuildPipeline(&videoData, mode);
-	gtkSetup(argc, argv, &videoData);
+	gtkSetup(argc, argv, &videoData, &audioData);
 
 	gstreamerPlay(&videoData);
 	gtk_main();
