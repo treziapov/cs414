@@ -1,5 +1,7 @@
 #include <gst/gst.h>
 #include <gtk-2.0\gtk\gtk.h>
+#include <gst/interfaces/xoverlay.h>
+#include <gdk/gdkwin32.h>
 #include <string>
 #include "utility.h"
 
@@ -12,6 +14,8 @@
 #define AVI_DEMUXER "avidemux"
 #define MKV_MUXER "matroskamux"
 #define MKV_DEMUXER "matroskademux"
+#define QT_MUXER "qtmux"
+#define QT_DEMUXER "qtdemux"
 #define IDENTITY "identity"
 #define TEST_VIDEO_SOURCE "C:/Users/Timur/Documents/Visual Studio 2010/Projects/cs414/cs414/test.avi"
 
@@ -27,6 +31,8 @@ typedef struct _VideoData
 	GstState state;
 	gint64 duration;
 
+	GtkWidget *window;
+	bool windowDrawn;
 	GtkWidget *slider;
 	gulong sliderUpdateSignalId;
 
@@ -42,16 +48,20 @@ typedef struct _VideoData
 } VideoData;
 
 void sendSeekEvent(VideoData *data);
-void gstreamerSetup(int argc, char *argv[], VideoData *videoData);
+void gstreamerBuildElementsOnce(VideoData *videoData);
+void gstreamerBuildElements(VideoData *videoData);
+void gstreamerStop(VideoData *videoData);
 void gstreamerPlay(VideoData *videoData);
 void gstreamerPause(VideoData *videoData);
 void gstreamerCleanup(VideoData *videoData);
 void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode);
-void gstreamerBuildDynamicElements(VideoData *videoData);
 void initializeVideoData(VideoData * videoData);
+void setVideoWindow_event(GtkWidget *widget, VideoData *data);
 
 void gstreamerPlayVideoFile(GtkWidget * widget, VideoData * videoData);
 void gstreamerPauseVideoFile(GtkWidget * widget, VideoData * videoData);
+void gstreamerForwardVideoFile(GtkWidget *widget, VideoData *videoData);
+void gstreamerRewindVideoFile(GtkWidget *widget, VideoData *videoData);
 void gstreamerStartCameraVideoCapture(GtkWidget *widget, VideoData *videoData);
 void gstreamerStopCameraVideoCapture(GtkWidget *widget, VideoData *videoData);
 	

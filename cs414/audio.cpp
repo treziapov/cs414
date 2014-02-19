@@ -327,10 +327,26 @@ void stopAudioPipeline(AudioData * data){
 
 void audio_start_recording(GtkWidget* source, gpointer* data){
 	//request file name
+	GtkWidget *dialog;
+	dialog = gtk_file_chooser_dialog_new("Save File",
+     				      NULL,
+     				      GTK_FILE_CHOOSER_ACTION_SAVE,
+     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+     				      GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+     				      NULL);
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER (dialog), TRUE);
+	gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), "C:/");
+    gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), "Untitled");
+	
+	gtk_dialog_run(GTK_DIALOG (dialog));
+	char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+	gtk_widget_destroy (dialog);
 	printf("Enter the desired filename (include extensions): ");
-	char filename[256];
-	fgets(filename, 256, stdin);
-	filename[strlen(filename) - 1] = '\0';
+
+
+	//char filename[256];
+	//fgets(filename, 256, stdin);
+	//filename[strlen(filename) - 1] = '\0';
 	
 	char * filetype = getFileType(filename);
 	if(filetype == NULL){
@@ -359,11 +375,15 @@ void audio_stop_recording(GtkWidget * source, gpointer * data){
 
 void audio_start_playback(GtkWidget * source, gpointer * data){
 	//request file name
+	GtkWidget *filechooserdialog = gtk_file_chooser_dialog_new("FileChooserDialog", NULL, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_OK, NULL);
+	gtk_dialog_run(GTK_DIALOG(filechooserdialog));
+    char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooserdialog));
+	gtk_widget_destroy(filechooserdialog);
 	printf("Enter the desired filename (include extensions): ");
-	char filename[256];
-	fgets(filename, 256, stdin);
-	filename[strlen(filename) - 1] = '\0';
-	
+	//char filename[256];
+	//fgets(filename, 256, stdin);
+	//filename[strlen(filename) - 1] = '\0';
+	printf("%s\n", filename);
 	char * filetype = getFileType(filename);
 	if(filetype == NULL){
 		return;

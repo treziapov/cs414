@@ -1,8 +1,6 @@
 #include <gst/gst.h>
-#include <gst/interfaces/xoverlay.h>
 #include <gtk-2.0\gtk\gtk.h>
 #include <gdk/gdk.h>
-#include <gdk/gdkwin32.h>
 #include <iostream>
 #include <string>
 #include "video.h"
@@ -11,30 +9,11 @@
 
 using namespace std;
 
-struct _GtkData
-{
-
-} GtkData;
-/* 
-	This function is called when the GUI toolkit creates the physical mainWindow that will hold the video.
-	At this point we can retrieve its handler (which has a different meaning depending on the windowing system)
-	and pass it to GStreamer through the XOverlay interface.
-*/
-static void setVideoWindow_event(GtkWidget *widget, VideoData *data) 
-{
-	GdkWindow *mainWindow = gtk_widget_get_window(widget);
-	guintptr window_handle;
-	
-	if (!gdk_window_ensure_native(mainWindow))
-	{
-		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
-	}	
-
-	// Retrieve mainWindow handler from GDK
-	window_handle = (guintptr)GDK_WINDOW_HWND(mainWindow);
-	// Pass it to playbin2, which implements XOverlay and will forward it to the video sink
-	gst_x_overlay_set_window_handle(GST_X_OVERLAY(data->videoSink), window_handle);
-}
+// Options
+GtkWidget *videoEncoding_option;
+GtkWidget *videoWidth_entry, *videoHeight_entry, *videoRate_entry;
+GtkWidget *audioEncoding_option;
+GtkWidget *sampingRate_entry, *sampleSize_entry;
 
 /* 
 	This function is called everytime the video mainWindow needs to be redrawn (due to damage/exposure,
@@ -111,8 +90,10 @@ static void error_callback(GstBus *bus, GstMessage *msg, VideoData *data) {
   data->state = GST_STATE_READY;
 }
 
-/* This function is called when an End-Of-Stream message is posted on the bus.
- * We just set the pipeline to READY (which stops playback) */
+/* 
+	This function is called when an End-Of-Stream message is posted on the bus.	
+	We just set the pipeline to READY (which stops playback) 
+*/
 static void EOS_callback(GstBus *bus, GstMessage *msg, VideoData *data) {
   g_print ("End-Of-Stream reached.\n");
   gst_element_set_state (data->pipeline, GST_STATE_READY);
@@ -152,6 +133,9 @@ static void sliderChange_event(GtkRange *range, VideoData *data) {
 		(gint64)(value * GST_SECOND));
 }
 
+/*
+	Callbacks for option entry
+*/
 static void updateWidth_callback(GtkWidget *widget, VideoData * data)
 {
 	char *c = GTK_ENTRY(widget)->text;
@@ -190,7 +174,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	GtkWidget *options;			// Vbox, holds the settings options
 
 	// Video related buttons
-	GtkWidget *playVideoFile_button, *pauseVideoFile_button;
+	GtkWidget *playVideoFile_button, *pauseVideoFile_button, *forwardVideoFile_button, *rewindVideoFile_button;
 	GtkWidget *startCameraVideoCapture_button, *stopCameraVideoCapture_button;
 
 	// Audio related buttons
@@ -200,12 +184,6 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	GtkWidget *video_label = gtk_label_new("Video:");
 	GtkWidget *audio_label = gtk_label_new("Audio:");
 
-	// Options
-	GtkWidget *videoEncoding_option;
-	GtkWidget *videoWidth_entry, *videoHeight_entry, *videoRate_entry;
-	GtkWidget *audioEncoding_option;
-	GtkWidget *smaplingRate_entry, *sampleSize_entry;
-
 	gtk_init(&argc, &argv);
    
 	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -214,25 +192,30 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	videoWindow = gtk_drawing_area_new();
 	gtk_widget_set_double_buffered(videoWindow, FALSE);
 	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), videoData);
+	videoData->window = videoWindow;
 	
 	// Set up options
-	videoEncoding_option = gtk_combo_new();
-	GList * encoding_list = NULL;
-	encoding_list = g_list_append(encoding_list, MJPEG_ENCODER);
+	videoEncoding_option = gtk_combo_box_new_text();
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MJPEG_ENCODER);
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MPEG4_ENCODER);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(videoEncoding_option), 0);
+	// GList * encoding_list = NULL;
+	/*encoding_list = g_list_append(encoding_list, MJPEG_ENCODER);
 	encoding_list = g_list_append(encoding_list, MPEG4_ENCODER);
-	gtk_combo_set_popdown_strings (GTK_COMBO (videoEncoding_option), encoding_list);
-	gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (videoEncoding_option)->entry), videoData->encoderPlugin.c_str());
-	g_signal_connect(G_OBJECT(videoEncoding_option), "changed", G_CALLBACK(updateEncodingPlugin_callback), videoData);
+	gtk_combo_set_popdown_strings (GTK_COMBO	 (videoEncoding_option), encoding_list);*/
+	//gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (videoEncoding_option)->entry), videoData->encoderPlugin.c_str());
+	//g_list_free(encoding_list);
+	//g_signal_connect(G_OBJECT(videoEncoding_option), "activate", G_CALLBACK(updateEncodingPlugin_callback), videoData);
 
 	videoWidth_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoWidth_entry), integerToString(videoData->width).c_str());
-	g_signal_connect_after(GTK_ENTRY(videoWidth_entry), "insert-text", G_CALLBACK(updateWidth_callback), videoData);
+	//g_signal_connect_after(GTK_ENTRY(videoWidth_entry), "insert-text", G_CALLBACK(updateWidth_callback), videoData);
 	videoHeight_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoHeight_entry), integerToString(videoData->height).c_str());
-	g_signal_connect_after(GTK_ENTRY(videoHeight_entry), "insert-text", G_CALLBACK(updateHeight_callback), videoData);
+	//g_signal_connect_after(GTK_ENTRY(videoHeight_entry), "insert-text", G_CALLBACK(updateHeight_callback), videoData);
 	videoRate_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), integerToString(videoData->recordingRate).c_str());
-	g_signal_connect_after(GTK_ENTRY(videoRate_entry), "insert-text", G_CALLBACK(updateRate_callback), videoData);
+	//g_signal_connect_after(GTK_ENTRY(videoRate_entry), "insert-text", G_CALLBACK(updateRate_callback), videoData);
 
 	// Video control callbacks
 	startCameraVideoCapture_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
@@ -244,6 +227,10 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(gstreamerPlayVideoFile), videoData);
 	pauseVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_PAUSE);
 	g_signal_connect(G_OBJECT(pauseVideoFile_button), "clicked", G_CALLBACK(gstreamerPauseVideoFile), videoData);
+	forwardVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
+	g_signal_connect(G_OBJECT(forwardVideoFile_button), "clicked", G_CALLBACK(gstreamerForwardVideoFile), videoData);
+	rewindVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
+	g_signal_connect(G_OBJECT(rewindVideoFile_button), "clicked", G_CALLBACK(gstreamerRewindVideoFile), videoData);
 
 	videoData->slider = gtk_hscale_new_with_range(0, 100, 1);
 	gtk_scale_set_draw_value (GTK_SCALE (videoData->slider), 0);
@@ -261,17 +248,21 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 
 	// Layout
 	videoControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (videoControls), video_label, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Play Video File:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (videoControls), playVideoFile_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), rewindVideoFile_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), pauseVideoFile_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), forwardVideoFile_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Camera Video:"), FALSE, FALSE, 20);
 	gtk_box_pack_start (GTK_BOX (videoControls), startCameraVideoCapture_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), stopCameraVideoCapture_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), videoData->slider, TRUE, TRUE, 2);
-
+	//gtk_box_pack_start (GTK_BOX (videoControls), videoData->slider, FALSE, FALSE, 100);
+	
 	audioControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (audioControls), audio_label, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (audioControls), gtk_label_new("Audio Playback:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (audioControls), audio_start_play, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (audioControls), audio_stop_play, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (audioControls), gtk_label_new("Camera Audio:"), FALSE, FALSE, 20);
 	gtk_box_pack_start (GTK_BOX (audioControls), audio_start_rec, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (audioControls), audio_stop_rec, FALSE, FALSE, 2);
    
@@ -309,7 +300,10 @@ int main(int argc, char *argv[])
 	
 	initializeVideoData(&videoData);
 
-	gstreamerSetup(argc, argv, &videoData);
+	gst_init(&argc, &argv);
+	gstreamerBuildElementsOnce(&videoData);
+	gstreamerBuildElements(&videoData);
+
 	gtkSetup(argc, argv, &videoData, &audioData);
 
 	// Instruct the bus to emit signals for each received message, and connect to the interesting signals
@@ -321,9 +315,85 @@ int main(int argc, char *argv[])
 	gst_object_unref (bus);
 
 	// Register a function that GLib will call every second
-	g_timeout_add_seconds (1, (GSourceFunc)refreshUI, &videoData);
+	//g_timeout_add_seconds (1, (GSourceFunc)refreshUI, &videoData);
 
 	gtk_main();
 
 	gstreamerCleanup(&videoData);
+}
+
+/* 
+	Callbacks for UI buttons
+*/
+void gstreamerPlayVideoFile(GtkWidget *widget, VideoData *videoData)
+{
+	if (videoData->state == GST_STATE_PAUSED && videoData->playerMode == File)
+	{
+		gstreamerPlay(videoData);
+	}
+	else
+	{
+		videoData->fileSourcePath = gtkGetUserFile();
+		gstreamerBuildPipeline(videoData, File);
+		gstreamerPlay(videoData);
+		videoData->playerMode = File;
+	}
+}
+
+void gstreamerPauseVideoFile(GtkWidget *widget, VideoData *videoData)
+{
+	gstreamerPause(videoData);
+}
+
+void gstreamerStartCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
+{
+	videoData->width = charPointerToInteger(GTK_ENTRY(videoWidth_entry)->text);
+	videoData->height = charPointerToInteger(GTK_ENTRY(videoHeight_entry)->text);
+	videoData->recordingRate = charPointerToInteger(GTK_ENTRY(videoRate_entry)->text);
+	char *activeComboItem = gtk_combo_box_get_active_text(GTK_COMBO_BOX(videoEncoding_option));
+	videoData->encoderPlugin = string(activeComboItem);
+	videoData->fileSinkPath = gtkGetUserSaveFile();
+
+	gstreamerBuildPipeline(videoData, Camera);
+	gstreamerPlay(videoData);
+	videoData->playerMode = Camera;
+}
+
+void gstreamerStopCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
+{
+	gstreamerStop(videoData);
+}
+
+void gstreamerForwardVideoFile(GtkWidget *widget, VideoData *videoData)
+{
+	if (videoData->playerMode == File)
+	{
+		if (videoData->playbackRate < 0)
+		{
+			videoData->playbackRate *= -1.0;
+		}
+		else
+		{
+			videoData->playbackRate *=2.0;
+		}
+		sendSeekEvent(videoData);
+		gstreamerPlay(videoData);
+	}
+}
+
+void gstreamerRewindVideoFile(GtkWidget *widget, VideoData *videoData)
+{
+	if (videoData->playerMode == File)
+	{
+		if (videoData->playbackRate > 0)
+		{
+			videoData->playbackRate *= -1.0;
+		}
+		else
+		{
+			videoData->playbackRate *=2.0;
+		}
+		sendSeekEvent(videoData);
+		gstreamerPlay(videoData);
+	}
 }

@@ -55,61 +55,25 @@ void sendSeekEvent(VideoData *data) {
 	g_print("Current playbackRate: %g\n", data->playbackRate);
 }
 
-/* Process keyboard input */
-gboolean handle_keyboard (GIOChannel *source, GIOCondition cond, VideoData *data) {
-  gchar *str = NULL;
-   
-  if (g_io_channel_read_line(source, &str, NULL ,NULL, NULL) != G_IO_STATUS_NORMAL) {
-    return TRUE;
-  }
-   
-  switch (g_ascii_tolower (str[0])) {
-  case 'p':
-    data->playing = !data->playing;
-    gst_element_set_state(data->pipeline, data->playing ? GST_STATE_PLAYING : GST_STATE_PAUSED);
-    g_print("Setting state to %s\n", data->playing ? "PLAYING" : "PAUSE");
-    break;
-  case 's':
-    if (g_ascii_isupper (str[0])) {
-      data->playbackRate *= 2.0;
-    } else {
-      data->playbackRate /= 2.0;
-    }
-    sendSeekEvent(data);
-    break;
-  case 'd':
-    data->playbackRate *= -1.0;
-    sendSeekEvent(data);
-    break;
-  case 'n':   
-    gst_element_send_event(data->videoSink, gst_event_new_step(GST_FORMAT_BUFFERS, 1, data->recordingRate, TRUE, FALSE));
-    g_print ("Stepping one frame\n");
-    break;
-  default:
-    break;
-  }
-   
-  g_free (str);
-  return TRUE;
+void gstreamerBuildElementsOnce(VideoData *videoData)
+{
+
 }
 
 /* 
 	Initialize GStreamer components 
 */
-void gstreamerSetup(int argc, char *argv[], VideoData *videoData) 
-{
-	gst_init(&argc, &argv);
-  
+void gstreamerBuildElements(VideoData *videoData) 
+{ 
 	// Build Elements 
 	videoData->pipeline = gst_pipeline_new("pipeline");
+	videoData->videoSource = gst_element_factory_make("dshowvideosrc", "videoSource");
+	videoData->videoSink = gst_element_factory_make("dshowvideosink", "videoSink");
 	videoData->tee = gst_element_factory_make("tee", "tee");
 	videoData->fileQueue = gst_element_factory_make("queue", "fileQueue");
 	videoData->playerQueue = gst_element_factory_make("queue", "playerQueue");
 	videoData->fileSource = gst_element_factory_make("filesrc", "fileSource");
 	videoData->fileSink = gst_element_factory_make("filesink", "filesink");
-
-	videoData->videoSource = gst_element_factory_make("dshowvideosrc", "videoSource");
-	videoData->videoSink = gst_element_factory_make("dshowvideosink", "videoSink");
 	videoData->videoConvert = gst_element_factory_make("autovideoconvert", "videoConvert");
 	videoData->videoFilter = gst_element_factory_make("capsfilter", "videoFilter");
 
@@ -121,6 +85,43 @@ void gstreamerSetup(int argc, char *argv[], VideoData *videoData)
 	// Set values 
 	g_object_set(videoData->fileSink, "location", videoData->fileSinkPath.c_str(), NULL);
 	g_object_set(videoData->fileSource, "location", videoData->fileSourcePath.c_str(), NULL);
+
+	if (videoData->fileSourcePath.find(".avi") != string::npos)
+	{
+		videoData->decoderPlugin = MJPEG_DECODER;
+		videoData->demuxerPlugin = AVI_MUXER;
+	}
+	else
+	{
+		videoData->decoderPlugin = MPEG4_DECODER;
+		videoData->demuxerPlugin = QT_DEMUXER;
+	}
+
+	videoData->muxerPlugin = AVI_MUXER;
+	videoData->videoDecoder = gst_element_factory_make(videoData->decoderPlugin.c_str(), "videoDecoder");
+	videoData->demuxer = gst_element_factory_make(videoData->demuxerPlugin.c_str(), "demuxer");
+	videoData->videoEncoder = gst_element_factory_make(videoData->encoderPlugin.c_str(), "videoEncoder");
+	videoData->muxer = gst_element_factory_make(videoData->muxerPlugin.c_str(), "muxer");
+
+	if (videoData->muxer == NULL) g_error("Could not create muxer element");
+	if (videoData->demuxer == NULL) g_error("Could not create demuxer element");
+	if (videoData->videoEncoder == NULL) g_error("Could not create video encoder element");
+	if (videoData->videoDecoder == NULL) g_error("Could not create video decoder element");
+
+	videoData->videoCaps = gst_caps_new_simple("video/x-raw-yuv",
+		//"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('Y', 'U', 'Y', '2'),
+		"height", G_TYPE_INT, videoData->height,
+		"width", G_TYPE_INT, videoData->width,
+		//"pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+		"framererate", GST_TYPE_FRACTION, videoData->recordingRate, 1, 
+		NULL);
+	g_object_set(G_OBJECT(videoData->videoFilter), "caps", videoData->videoCaps, NULL);
+	gst_caps_unref (videoData->videoCaps);
+
+	if (videoData->windowDrawn)
+	{
+		setVideoWindow_event(videoData->window, videoData);
+	}
 }
 
 /* Run the current gstreamer pipeline */
@@ -155,6 +156,29 @@ void gstreamerCleanup(VideoData *videoData)
 	gst_object_unref(videoData->pipeline);
 }
 
+/* 
+	This function is called when the GUI toolkit creates the physical mainWindow that will hold the video.
+	At this point we can retrieve its handler (which has a different meaning depending on the windowing system)
+	and pass it to GStreamer through the XOverlay interface.
+*/
+void setVideoWindow_event(GtkWidget *widget, VideoData *data) 
+{
+	GdkWindow *mainWindow = gtk_widget_get_window(widget);
+	guintptr window_handle;
+	
+	if (!gdk_window_ensure_native(mainWindow))
+	{
+		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
+	}	
+
+	// Retrieve mainWindow handler from GDK
+	window_handle = (guintptr)GDK_WINDOW_HWND(mainWindow);
+	// Pass it to playbin2, which implements XOverlay and will forward it to the video sink
+	gst_x_overlay_set_window_handle(GST_X_OVERLAY(data->videoSink), window_handle);
+
+	data->windowDrawn = true;
+}
+
 /* Build the appropriate pipeline from data based on parameter mode */
 void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode)
 {
@@ -162,26 +186,26 @@ void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode)
 	switch(videoData->playerMode)
 	{
 		case Camera:
+			gst_element_set_state (videoData->pipeline, GST_STATE_NULL); 
 			gst_element_unlink_many(videoData->videoSource, videoData->videoConvert, videoData->videoFilter, videoData->tee, NULL);
 			gst_element_unlink_many(videoData->tee, videoData->fileQueue, videoData->videoEncoder, videoData->muxer, videoData->fileSink, NULL);
 			gst_element_unlink_many(videoData->tee, videoData->playerQueue, videoData->videoSink, NULL);
 			gst_bin_remove_many(GST_BIN(videoData->pipeline), 
 				videoData->videoSource, videoData->videoConvert, videoData->videoFilter, videoData->tee, videoData->fileQueue, 
-				videoData->videoEncoder, videoData->muxer, videoData->fileSink, videoData->playerQueue, videoData->videoSink, NULL);
-			gst_element_set_state (videoData->videoSink, GST_STATE_NULL); 
+				videoData->videoEncoder, videoData->muxer, videoData->fileSink, videoData->playerQueue, NULL);		
+
 			break;
 		case File:
+			gst_element_set_state (videoData->pipeline, GST_STATE_NULL);
 			gst_element_unlink(videoData->fileSource, videoData->demuxer);
 			gst_element_unlink_many(videoData->videoDecoder, videoData->videoConvert, videoData->videoSink, NULL);
-			gst_bin_remove_many(GST_BIN(videoData->pipeline), videoData->videoSink); 
-			gst_bin_remove_many(GST_BIN(videoData->pipeline), videoData->fileSource, videoData->demuxer, videoData->videoDecoder, videoData->videoConvert, videoData->videoSink, NULL);
-			gst_element_set_state (videoData->videoSink, GST_STATE_NULL); 
+			gst_bin_remove_many(GST_BIN(videoData->pipeline), videoData->fileSource, videoData->demuxer, videoData->videoDecoder, videoData->videoConvert, NULL);
 			break;
 		default: 
 			break;
 	}
-		
-	gstreamerBuildDynamicElements(videoData);
+
+	gstreamerBuildElements(videoData);
 
 	switch(mode)
 	{
@@ -207,7 +231,7 @@ void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode)
 			if (!gst_element_link_many(videoData->tee, videoData->playerQueue, videoData->videoSink, NULL)) 
 			{
 				gst_object_unref(videoData->pipeline);
-				g_print("Failed linking: tee -> queue -> mediaSink \n");
+				g_error("Failed linking: tee -> queue -> mediaSink \n");
 			}
 			break;
 
@@ -219,41 +243,11 @@ void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode)
 			if (!gst_element_link(videoData->fileSource, videoData->demuxer) || !gst_element_link_many(videoData->videoDecoder, videoData->videoConvert, videoData->videoSink, NULL)) 
 			{
 				gst_object_unref(videoData->pipeline);
-				g_print("Failed linking playback pipeline \n");
+				g_error("Failed linking playback pipeline \n");
 			}
 			break;
 	}
-
-	gst_element_set_state (videoData->videoSink, GST_STATE_READY);
 	videoData->state = GST_STATE_READY;
-}
-
-void gstreamerBuildDynamicElements(VideoData * videoData)
-{
-	if (videoData->muxer) g_object_unref(videoData->muxer);
-	if (videoData->demuxer) g_object_unref(videoData->demuxer);
-	if (videoData->videoEncoder) g_object_unref(videoData->videoEncoder);
-	if (videoData->videoDecoder) g_object_unref(videoData->videoDecoder);
-
-	videoData->muxer = gst_element_factory_make(videoData->muxerPlugin.c_str(), "muxer");
-	videoData->demuxer = gst_element_factory_make(videoData->demuxerPlugin.c_str(), "demuxer");
-	videoData->videoEncoder = gst_element_factory_make(videoData->encoderPlugin.c_str(), "videoEncoder");
-	videoData->videoDecoder = gst_element_factory_make(videoData->decoderPlugin.c_str(), "videoDecoder");
-
-	if (videoData->muxer == NULL) g_error("Could not create muxer element");
-	if (videoData->demuxer == NULL) g_error("Could not create demuxer element");
-	if (videoData->videoEncoder == NULL) g_error("Could not create video encoder element");
-	if (videoData->videoDecoder == NULL) g_error("Could not create video decoder element");
-
-	videoData->videoCaps = gst_caps_new_simple("video/x-raw-yuv",
-		"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('Y', 'U', 'Y', '2'),
-		"height", G_TYPE_INT, videoData->height,
-		"width", G_TYPE_INT, videoData->width,
-		"pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
-		"framerecordingRate", GST_TYPE_FRACTION, videoData->recordingRate, 1, 
-		NULL);
-	g_object_set(G_OBJECT(videoData->videoFilter), "caps", videoData->videoCaps, NULL);
-	gst_caps_unref (videoData->videoCaps);
 }
 
 /* Sets default video data parameters*/
@@ -273,48 +267,7 @@ void initializeVideoData(VideoData * videoData)
 	videoData->decoderPlugin = (videoData->fileSourcePath.find(".avi") != string::npos ? MJPEG_DECODER : MPEG4_DECODER); 
 	videoData->duration = GST_CLOCK_TIME_NONE;
 	videoData->playerMode = Initial;
+	videoData->state = GST_STATE_NULL;
+	videoData->windowDrawn = false;
 }
 
-/* 
-	Callbacks
-*/
-void gstreamerPlayVideoFile(GtkWidget *widget, VideoData *videoData)
-{
-	if (videoData->state == GST_STATE_PAUSED && videoData->playerMode == File)
-	{
-		gstreamerPlay(videoData);
-	}
-	else if (videoData->playerMode != File)
-	{
-		videoData->fileSourcePath = gtkGetUserFile();
-		videoData->playerMode = File;
-		gstreamerBuildPipeline(videoData, File);
-		gstreamerPlay(videoData);
-	}
-}
-
-void gstreamerPauseVideoFile(GtkWidget *widget, VideoData *videoData)
-{
-	gstreamerPause(videoData);
-}
-
-void gstreamerStartCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
-{
-	if (videoData->state == GST_STATE_PAUSED && videoData->playerMode == Camera)
-	{
-		gstreamerPlay(videoData);
-		return;
-	}
-	else if (videoData->playerMode != Camera)
-	{
-		videoData->fileSinkPath = gtkGetUserSaveFile();
-		videoData->playerMode = Camera;
-		gstreamerBuildPipeline(videoData, Camera);
-		gstreamerPlay(videoData);
-	}
-}
-
-void gstreamerStopCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
-{
-	gstreamerPause(videoData);
-}
