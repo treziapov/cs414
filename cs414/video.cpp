@@ -68,7 +68,14 @@ void gstreamerBuildElements(VideoData *videoData)
 	// Build Elements 
 	videoData->pipeline = gst_pipeline_new("pipeline");
 	videoData->videoSource = gst_element_factory_make("dshowvideosrc", "videoSource");
-	videoData->videoSink = gst_element_factory_make("dshowvideosink", "videoSink");
+	if (videoData->encoderPlugin == MPEG4_ENCODER && videoData->playerMode == Camera)
+	{
+		videoData->videoSink = gst_element_factory_make("autovideosink", "videoSink");
+	}
+	else
+	{
+		videoData->videoSink = gst_element_factory_make("dshowvideosink", "videoSink");
+	}
 	videoData->tee = gst_element_factory_make("tee", "tee");
 	videoData->fileQueue = gst_element_factory_make("queue", "fileQueue");
 	videoData->playerQueue = gst_element_factory_make("queue", "playerQueue");
@@ -101,7 +108,16 @@ void gstreamerBuildElements(VideoData *videoData)
 	videoData->muxer = gst_element_factory_make(videoData->muxerPlugin.c_str(), "muxer");
 	videoData->demuxer = gst_element_factory_make(videoData->demuxerPlugin.c_str(), "demuxer");
 	videoData->videoDecoder = gst_element_factory_make(videoData->decoderPlugin.c_str(), "videoDecoder");
-	videoData->videoEncoder = gst_element_factory_make(videoData->encoderPlugin.c_str(), "videoEncoder");
+
+	if (videoData->encoderPlugin == NO_ENCODER)
+	{
+		videoData->encoderPlugin = IDENTITY;
+		videoData->videoEncoder = gst_element_factory_make(IDENTITY, "videoEncoder");
+	}
+	else
+	{
+		videoData->videoEncoder = gst_element_factory_make(videoData->encoderPlugin.c_str(), "videoEncoder");
+	}
 
 	if (videoData->muxer == NULL) g_error("Could not create muxer element");
 	if (videoData->demuxer == NULL) g_error("Could not create demuxer element");
@@ -109,7 +125,7 @@ void gstreamerBuildElements(VideoData *videoData)
 	if (videoData->videoDecoder == NULL) g_error("Could not create video decoder element");
 
 	videoData->videoCaps = gst_caps_new_simple("video/x-raw-yuv",
-		"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('Y', 'U', 'Y', '2'),
+		//"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('Y', 'U', 'Y', '2'),
 		"height", G_TYPE_INT, videoData->height,
 		"width", G_TYPE_INT, videoData->width,
 		//"pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
@@ -205,12 +221,13 @@ void gstreamerBuildPipeline(VideoData *videoData, PlayerMode mode)
 			break;
 	}
 
+	videoData->playerMode = mode;
 	gstreamerBuildElements(videoData);
 
 	switch(mode)
 	{
 		case Camera:
-			if (videoData->encoderPlugin == MJPEG_ENCODER)
+			if (videoData->encoderPlugin == MJPEG_ENCODER || videoData->encoderPlugin == IDENTITY)
 			{
 				// Build the camera pipeline
 				gst_bin_add_many(GST_BIN(videoData->pipeline), 

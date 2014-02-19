@@ -171,6 +171,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	videoEncoding_option = gtk_combo_box_new_text();
 	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MJPEG_ENCODER);
 	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), MPEG4_ENCODER);
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoEncoding_option), NO_ENCODER);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(videoEncoding_option), 0);
 
 	videoWidth_entry = gtk_entry_new();
@@ -320,7 +321,7 @@ void gstreamerStartCameraVideoCapture(GtkWidget *widget, VideoData *videoData)
 
 	gstreamerBuildPipeline(videoData, Camera);
 	gstreamerPlay(videoData);
-	videoData->playerMode = Camera;
+
 }
 
 void gstreamerStopCameraVideoCapture(GtkWidget *widget, VideoData *videoData)

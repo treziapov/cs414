@@ -6,6 +6,7 @@
 #include "utility.h"
 
 /* GStreamer Plugin Definitions */
+#define NO_ENCODER "None"
 #define MJPEG_ENCODER "jpegenc"
 #define MJPEG_DECODER "jpegdec"
 #define MPEG4_ENCODER "ffenc_mpeg4"
