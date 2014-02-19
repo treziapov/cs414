@@ -5,8 +5,10 @@
 #include <gtk-2.0\gtk\gtk.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkwin32.h>
+#include <string>
 
 #include "audio.h"
+#include "utility.h"
 
 //Handles the demuxer's new pad signal
 static void addPadSignalHandler(GstElement * element, GstPad * newPad, AudioData * data){
@@ -251,8 +253,8 @@ void playAudioPipeline(char * format, char * filepath, int rate, int channel, Au
 //Function to call for audio pipeline creation
 //Calls helper functions based on the inputs and outputs
 void createAudioPipeline(char * source, int rate, int channel, char * format, char * sink, AudioData * data){
-	GstBus * bus;
-	GstMessage * msg;
+	//GstBus * bus;
+	//GstMessage * msg;
 	GstStateChangeReturn ret;
 
 	if(source == "dshowaudiosrc"){
@@ -327,44 +329,22 @@ void stopAudioPipeline(AudioData * data){
 
 void audio_start_recording(GtkWidget* source, gpointer* data){
 	//request file name
-	GtkWidget *dialog;
-	dialog = gtk_file_chooser_dialog_new("Save File",
-     				      NULL,
-     				      GTK_FILE_CHOOSER_ACTION_SAVE,
-     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-     				      GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
-     				      NULL);
-	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER (dialog), TRUE);
-	gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), "C:/");
-    gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), "Untitled");
 	
-	gtk_dialog_run(GTK_DIALOG (dialog));
-	char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-	gtk_widget_destroy (dialog);
-	printf("Enter the desired filename (include extensions): ");
-
-
-	//char filename[256];
-	//fgets(filename, 256, stdin);
-	//filename[strlen(filename) - 1] = '\0';
+	string filename = gtkGetUserSaveFile();
 	
-	char * filetype = getFileType(filename);
+	char * filetype = getFileType((char*)filename.c_str());
 	if(filetype == NULL){
 		return;
 	}
 
-	printf("Enter the desired bitrate (default is 44100): ");
-	char bitrateBuffer[256];
-	fgets(bitrateBuffer, 256, stdin);
-
-	int rate = atoi(bitrateBuffer);
+	int rate = charPointerToInteger(GTK_ENTRY(((AudioData *)data)->audioRate_entry)->text);
 	if(rate < 8000 || rate > 44100){
 		printf("Invalid Bitrate. Defaulting to 44100.\n");
 		rate = 44100;
 	}
 	
 	//Create the audio pipeline
-	createAudioPipeline("dshowaudiosrc", rate, 1, filetype, filename, (AudioData *)data);
+	createAudioPipeline("dshowaudiosrc", rate, 1, filetype, (char *)filename.c_str(), (AudioData *)data);
 }
 
 void audio_stop_recording(GtkWidget * source, gpointer * data){
@@ -379,11 +359,7 @@ void audio_start_playback(GtkWidget * source, gpointer * data){
 	gtk_dialog_run(GTK_DIALOG(filechooserdialog));
     char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooserdialog));
 	gtk_widget_destroy(filechooserdialog);
-	printf("Enter the desired filename (include extensions): ");
-	//char filename[256];
-	//fgets(filename, 256, stdin);
-	//filename[strlen(filename) - 1] = '\0';
-	printf("%s\n", filename);
+	
 	char * filetype = getFileType(filename);
 	if(filetype == NULL){
 		return;

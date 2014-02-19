@@ -182,6 +182,9 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	videoRate_entry = gtk_entry_new();
 	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), integerToString(videoData->recordingRate).c_str());
 
+	audioData->audioRate_entry = gtk_entry_new();
+	gtk_entry_set_text (GTK_ENTRY(audioData->audioRate_entry), integerToString(audioData->bitrate).c_str());
+
 	// Video control callbacks
 	startCameraVideoCapture_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
 	g_signal_connect(G_OBJECT (startCameraVideoCapture_button), "clicked", G_CALLBACK(gstreamerStartCameraVideoCapture), videoData);
@@ -222,12 +225,12 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	gtk_box_pack_start (GTK_BOX (videoControls), startCameraVideoCapture_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), stopCameraVideoCapture_button, FALSE, FALSE, 2);
 	//gtk_box_pack_start (GTK_BOX (videoControls), videoData->slider, FALSE, FALSE, 100);
-	
+
 	//audioControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Audio Playback:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Audio Playback:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (videoControls), audio_start_play, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), audio_stop_play, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Camera Audio:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Record Audio:"), FALSE, FALSE, 20);
 	gtk_box_pack_start (GTK_BOX (videoControls), audio_start_rec, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), audio_stop_rec, FALSE, FALSE, 2);
    
@@ -240,6 +243,8 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 	gtk_box_pack_start (GTK_BOX (options), videoRate_entry, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Compression:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (options), videoEncoding_option, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Audio Bitrate:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (options), audioData->audioRate_entry, FALSE, FALSE, 1);
 
 	mainHBox = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (mainHBox), videoWindow, TRUE, TRUE, 0);
@@ -262,6 +267,7 @@ int main(int argc, char *argv[])
 {
 	VideoData videoData;
 	AudioData audioData;
+	audioData.bitrate = 44100;
 	
 	initializeVideoData(&videoData);
 
