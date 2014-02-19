@@ -129,7 +129,7 @@ void gtkSetup(int argc, char *argv[], VideoData *videoData, AudioData *audioData
 {
 	GtkWidget *vbox;
 	GtkWidget *window, *video_window;
-	GtkWidget *menubar, *recordermenu, *playermenu;
+	GtkWidget *menubar, *recordermenu, *playermenu, * audioplayermenu;
 	GtkWidget *record, *play, *start_rec, *stop_rec, *start_play, *stop_play, *pause, *rewind, *forward, *audio_start_rec, *audio_stop_rec, *audio_start_play, *audio_stop_play, *play_audio;
 
 	gtk_init(&argc, &argv);
