@@ -9,6 +9,8 @@ typedef struct AudioData{
 	GstElement * encoder;
 	GstElement * decoder;
 	GstElement * sink;
+	int bitrate;
+	GtkWidget * audioRate_entry;
 } AudioData;
 
 static void addPadSignalHandler(GstElement * element, GstPad * newPad, AudioData * data);
