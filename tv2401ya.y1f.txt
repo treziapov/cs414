@@ -1,0 +1,26 @@
+﻿
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#	new file:   mp2/client/ipch/cs414_mp2_clientside-65725850/cs414_mp2_clientside-e426300c.ipch
+#	modified:   mp2/server/cs414_mp2/listener.cpp
+#	modified:   mp2/server/cs414_mp2/listener.h
+#	modified:   mp2/server/cs414_mp2/server.cpp
+#	new file:   mp2/server/ipch/cs414_mp2-846d5822/cs414_mp2-7da4d7a9.ipch
+#
+# Changes not staged for commit:
+#   (use "git add/rm <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	deleted:    mp1/ipch/cs414-3cd3c612/cs414-4c8d915b.ipch
+#	deleted:    mp1/ipch/cs414-a385b98a/cs414-4c8d915b.ipch
+#	deleted:    mp1/ipch/cs414-c1e3db32/cs414-4c8d915b.ipch
+#	deleted:    mp2/client/ipch/cs414_mp2_clientside-2f69a597/cs414_mp2_clientside-e426300c.ipch
+#	deleted:    mp2/client/ipch/cs414_mp2_clientside-65725850/cs414_mp2_clientside-e426300c.ipch
+#	deleted:    mp2/server/ipch/cs414_mp2-5f2cee/cs414_mp2-7da4d7a9.ipch
+#	deleted:    mp2/server/ipch/cs414_mp2-846d5822/cs414_mp2-7da4d7a9.ipch
+#
+

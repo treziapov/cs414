@@ -165,7 +165,7 @@ void createClient(Resources & resource, int clientBandwidth, int clientPort){
 	newClient.bandwidth = clientBandwidth;
 	newClient.port = clientPort;
 
-	resource.clients.push_back(newClient);
+	//resource.clients.push_back(newClient);
 	resource.remainingBandwidth -= clientBandwidth;
 }
 
@@ -189,12 +189,12 @@ void handleConnection(void * ptr){
 			//Call function to stop the stream
 
 
-			for(int i = 0; i < (int)resource.clients.size(); i++){
+			/*for(int i = 0; i < (int)resource.clients.size(); i++){
 				if(resource.clients[i].port == buffer[0]){
 					resource.remainingBandwidth += resource.clients[i].bandwidth;
 					resource.clients.erase(resource.clients.begin() + i);
 				}
-			}
+			}*/
 
 			endStream = true;
 		}else if(buffer[1] == PAUSE){

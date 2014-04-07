@@ -1,4 +1,4 @@
-#include <vector>
+//#include <vector>
 #include <WinSock2.h>
 
 //Resolution constants
@@ -30,7 +30,7 @@ typedef struct Client{
 typedef struct Resources{
 	int totalBandwidth;
 	int remainingBandwidth;
-	std::vector<Client> clients;
+	Client * clients;
 } Resources;
 
 typedef struct Request{
