@@ -1,18 +1,38 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "listener.h"
 
-/*int getBandwidth(){
+//Gets the saved bandwidth from resource.txt
+int getBandwidth(){
 	FILE * myFile;
 	myFile = fopen("resource.txt", "r");
+
+	fseek(myFile, 0, SEEK_END);
+	long fileSize = ftell(myFile);
+	fseek(myFile, 0, SEEK_SET);
+
+	char * buffer = (char *)malloc(fileSize + 1);
+	fread(buffer, fileSize, 1, myFile);
+	buffer[fileSize] = '\0';
+
+	fclose(myFile);
+
+	return atoi(buffer);
 }
 
-int saveBandwidth(int bandwidth){
-	fstream myFile("resource.txt");
+//Saves the current bandwidth to resource.txt (for the clientside)
+void saveBandwidth(int bandwidth){
+	FILE * myFile;
+	myFile = fopen("resource.txt", "w+");
 
+	fprintf(myFile, "%d", bandwidth);
 
-}*/
+	fclose(myFile);
+}
 
 int main(int argc, char *argv[]){
-	//int bandwidth = getBandwidth();
+	int bandwidth = getBandwidth();
 
-	init_listener(1000000000);
+	init_listener(bandwidth);
 }
