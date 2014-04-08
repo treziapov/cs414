@@ -22,3 +22,14 @@
 //Error constants
 #define RESOURCES_ERROR 1
 #define CONNECTION_ERROR 2
+
+void connect(char * ip, int mode, int resolution, int rate);
+void stopStream();
+
+void pauseStream();
+
+void resumeStream();
+
+void rewindStream();
+
+void fastforwardStream();

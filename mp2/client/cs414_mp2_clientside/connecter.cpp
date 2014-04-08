@@ -189,8 +189,12 @@ int changeResources(int mode, int resolution, int rate, int newBandwidth){
 	}
 }
 
-int main(int argc, char *argv[]){
+/*int main(int argc, char *argv[]){
 	connect("127.0.0.1", ACTIVE, R240, 15);
 
 	while(true);
-}
+}*/
+
+
+
+
