@@ -33,4 +33,6 @@ int main(int argc, char *argv[]){
 	int bandwidth = getBandwidth();
 
 	init_listener(bandwidth);
+
+	return 0;
 }

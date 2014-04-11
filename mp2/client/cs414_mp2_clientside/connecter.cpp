@@ -1,7 +1,5 @@
 #ifndef WIN32_LEAN_AND_MEAN
-
 #define WIN32_LEAN_AND_MEAN
-
 #endif
 
 #include <windows.h>
@@ -15,7 +13,6 @@
 #pragma comment(lib, "AdvApi32.lib")
 
 #include "connecter.h"
-
 
 SOCKET ServerSocket;
 WSADATA wsaData;

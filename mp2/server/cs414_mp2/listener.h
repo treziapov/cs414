@@ -1,6 +1,8 @@
 //#include <vector>
 #include <WinSock2.h>
 
+#include "gst_server.h"
+
 //Resolution constants
 #define R240 1
 #define R480 2
@@ -25,6 +27,7 @@
 typedef struct Client{
 	int bandwidth;
 	int port;
+	GstData gstData;
 } Client;
 
 typedef struct Resources{
@@ -48,9 +51,10 @@ typedef struct ThreadData{
 	int mode;
 	int rate;
 	SOCKET ClientSocket;
+	GstData *gstData;
 } ThreadData;
 
 void init_listener(int totalBandwidth);
 int calculateResources(Resources rsc, Request req);
-void createClient(Resources & resource, int clientBandwidth, int clientPort);
+Client* createClient(Resources & resource, int clientBandwidth, int clientPort);
 void handleConnection(void * ptr);

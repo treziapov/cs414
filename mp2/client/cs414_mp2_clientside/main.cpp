@@ -2,18 +2,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "connecter.h"
 
+#include "connecter.h"
+#include "gst_client.h"
 
 GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
 GtkWidget *current_bandwidth;
 GtkWidget *current_rate;
 
-
+Mode mode;
 bool started = 0;
 bool active = true;
-Settings * settingsData;
+Settings settingsData;
+GstData gstData;
 
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
@@ -50,19 +52,19 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		gtk_entry_set_text (GTK_ENTRY(videoRate_entry), "10");
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), FALSE);
 
-		settingsData->rate = 10;
-		settingsData->mode = PASSIVE;
+		settingsData.rate = 10;
+		settingsData.mode = Passive;
 	}
 	else{
 		active=true;
 		gtk_entry_set_text (GTK_ENTRY(videoRate_entry), "15");
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), TRUE);
 
-		settingsData->rate = 15;
-		settingsData->mode = ACTIVE;
+		settingsData.rate = 15;
+		settingsData.mode = Active;
 	}
 
-	int retval = switchMode(settingsData);
+	int retval = switchMode(&settingsData);
 
 	if(retval == CONNECTION_ERROR){
 		//report connection error or server resource error
@@ -73,13 +75,13 @@ void updateOptions(GtkWidget *widget, gpointer data){
 
 void updateResolution(GtkWidget * widget, gpointer data){
 	if(started == 0){
-		if(settingsData->resolution == R240){
-			settingsData->resolution = R480;
+		if(settingsData.resolution == R240){
+			settingsData.resolution = R480;
 		}else{
-			settingsData->resolution = R240;
+			settingsData.resolution = R240;
 		}
 	}else{
-		if(settingsData->resolution == R240){
+		if(settingsData.resolution == R240){
 			gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 0);
 		}else{
 			gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 1);
@@ -91,7 +93,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 	
 	if(started == 0){
 		//send start
-		int retval = startStream(settingsData);
+		int retval = startStream(&settingsData);
 
 		if(retval == 0){
 			started=1;
@@ -123,16 +125,15 @@ void stopVideo(GtkWidget *widget, gpointer data){
 	started=0;
 	stopStream();
 }
+
 void updateBandwidth(GtkWidget *widget, gpointer data){
 	saveBandwidth(atoi(GTK_ENTRY(bandwidth_entry)->text));
 	
-	settingsData->bandwidth = atoi(GTK_ENTRY(bandwidth_entry)->text);
+	settingsData.bandwidth = atoi(GTK_ENTRY(bandwidth_entry)->text);
 
-	int retval = changeResources(settingsData);
-
+	int retval = changeResources(&settingsData);
 	if(retval == CONNECTION_ERROR){
 		//report connection error
-
 		started = 0;
 	}
 	else{
@@ -143,21 +144,19 @@ void updateBandwidth(GtkWidget *widget, gpointer data){
 		gtk_label_set_text(GTK_LABEL(current_bandwidth), string);
 	}
 }
+
 void updateVideo(GtkWidget *widget, gpointer data){
 	int rate = atoi(GTK_ENTRY(videoRate_entry)->text);
-	if(settingsData->mode == ACTIVE){
+	if(settingsData.mode == Active){
 		if(rate >= 15 && rate <= 25){
-			settingsData->rate = rate;
+			settingsData.rate = rate;
 
-			int retval = changeResources(settingsData);
-
+			int retval = changeResources(&settingsData);
 			if(retval == CONNECTION_ERROR){
 				//report connection error
-
 				started = 0;
 			}else if(retval == RESOURCES_ERROR){
 				//report resources error
-
 				started = 0;
 			}
 			else{
@@ -168,23 +167,16 @@ void updateVideo(GtkWidget *widget, gpointer data){
 				strcat(string, numstr);
 				gtk_label_set_text(GTK_LABEL(current_rate), string);
 			}
-		}
-		
-		
+		}	
 	}
 	else{
 		//don't need to check or set rate. Rate is set to 10 at mode switch
-		
-
-		int retval = changeResources(settingsData);
-
+		int retval = changeResources(&settingsData);
 		if(retval == CONNECTION_ERROR){
 			//report connection error
-
 			started = 0;
 		}else if(retval == RESOURCES_ERROR){
 			//report resources error
-
 			started = 0;
 		}
 		else{
@@ -210,11 +202,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	// Video related buttons
 	GtkWidget *playVideoFile_button, *pauseVideoFile_button, *forwardVideoFile_button, *rewindVideoFile_button, *stopVideoFile_button;
 	GtkWidget *updateBandwidth_button, *updateVideo_button;
-	
 
-	
-	
-	
 	char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
 	char stringHead[19] = "Current Bandwidth ";
 	sprintf(numstr, "%d", getBandwidth());
@@ -250,13 +238,8 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	char buffer[16];
 	videoRate_entry = gtk_entry_new();
 	bandwidth_entry = gtk_entry_new();
-	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData->rate, buffer, 10));
-	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData->bandwidth, buffer, 10));
-
-	
-	
-
-	
+	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData.rate, buffer, 10));
+	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData.bandwidth, buffer, 10));
 
 	playVideoFile_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
@@ -276,10 +259,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	
 	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
 
-	
-
-	
-
 	// Layout
 	videoControls = gtk_hbox_new (FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Play Video File:"), FALSE, FALSE, 20);
@@ -289,9 +268,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (videoControls), forwardVideoFile_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (videoControls), stopVideoFile_button, FALSE, FALSE, 2);
 
-
-
-   
 	//Resolution, Mode, and Rate options
 	options = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Bandwith (B/s):"), FALSE, FALSE, 0);
@@ -308,8 +284,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (options), current_bandwidth, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), current_rate, FALSE, FALSE, 1);
 
-
-
 	mainHBox = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (mainHBox), videoWindow, TRUE, TRUE, 0);
 	gtk_box_pack_start (GTK_BOX (mainHBox), options, FALSE, FALSE, 10);
@@ -323,24 +297,27 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_widget_show_all (mainWindow);
 }
 
-
-
-
-
+/*
+	Main Method
+*/
 int main(int argc, char* argv[])
 {
-	settingsData = new Settings();
-	settingsData->bandwidth = getBandwidth();
-	settingsData->ip = "127.0.0.1";
-	settingsData->mode = ACTIVE;
-	settingsData->rate = 15;
-	settingsData->resolution = R240;
+	settingsData.bandwidth = getBandwidth();
+	settingsData.ip = "localhost";	// TODO: parameterize
+	settingsData.mode = Active;
+	settingsData.rate = 15;
+	settingsData.resolution = R240;
+	connect(&settingsData);
 
-	//while(true);
+	gstData.mode = Active;
+	GstClient::initPipeline(&gstData);
+	GstClient::buildPipeline(&gstData);
+	GstClient::setPipelineToRun(&gstData);
+
     gtk_init(&argc, &argv);
-
     gtkSetup(argc, argv);
-
     gtk_main();
+
+	GstClient::stopAndFreeResources(&gstData);
     return 0;
 }

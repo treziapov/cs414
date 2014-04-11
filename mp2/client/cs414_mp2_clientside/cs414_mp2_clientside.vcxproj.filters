@@ -21,9 +21,15 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gst_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="connecter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gst_client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

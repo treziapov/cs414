@@ -1,9 +1,7 @@
 #undef UNICODE
 
 #ifndef WIN32_LEAN_AND_MEAN
-
 #define WIN32_LEAN_AND_MEAN
-
 #endif
 
 #include <stdlib.h>
@@ -19,7 +17,7 @@
 
 Resources resource;
 
-void addClient(Client newClient){
+Client* addClient(Client newClient){
 	resource.numClients++;
 
 	Client * newArray = new Client[resource.numClients];
@@ -34,6 +32,8 @@ void addClient(Client newClient){
 		delete[] resource.clients;
 	}
 	resource.clients = newArray;
+
+	return &resource.clients[resource.numClients - 1];
 }
 
 void removeClient(int port){
@@ -43,7 +43,6 @@ void removeClient(int port){
 	for(int i = 0; i < resource.numClients; i++){
 		if(i != j || resource.clients[i].port != port){
 			newArray[j] = resource.clients[i];
-
 			j++;
 		}else{
 			resource.remainingBandwidth += resource.clients[i].bandwidth;
@@ -127,15 +126,23 @@ void init_listener(int totalBandwidth){
 
 	int currentPort = 6001;
 	int videoPort = 7001;
-	int audioPort = 8001;
-	while(true){
+	int audioPort = 8001;\
+
+	while (true) {
+		SOCKADDR_IN clientInfo = {0};
+		int addrsize = sizeof(clientInfo);
+		char* clientIp = NULL;
+
 		printf("waiting for a connection\n");
-		ClientSocket = accept(ListenSocket, NULL, NULL);
+
+		ClientSocket = accept(ListenSocket, (struct sockaddr*)&clientInfo, &addrsize);
 		if(ClientSocket == INVALID_SOCKET){
 			printf("accept failed");
 			return;
 		}
-		printf("Connected client on port %d\n", currentPort);
+
+		clientIp = inet_ntoa(clientInfo.sin_addr);
+		printf("Connected client on %s\n", clientIp);
 
 		//Get the desired stream settings from the client
 		Request newRequest;
@@ -152,7 +159,7 @@ void init_listener(int totalBandwidth){
 			closesocket(ClientSocket);
 		}else{
 			//Create the client in the bandwidth table
-			createClient(resource, clientBandwidth, currentPort);
+			Client *currentClient = createClient(resource, clientBandwidth, currentPort);
 			
 			//Initialize data to send to new thread
 			ThreadData * data = new ThreadData();
@@ -162,6 +169,8 @@ void init_listener(int totalBandwidth){
 			data->port = currentPort;
 			data->videoPort = videoPort;
 			data->audioPort = audioPort;
+			data->gstData = &currentClient->gstData;
+			data->gstData->clientIp = strdup(clientIp);
 
 			//Send accept signal
 			int signal = ACCEPT;
@@ -218,13 +227,13 @@ int calculateResources(Resources rsc, Request req){
 	return clientBandwidth;
 }
 
-void createClient(Resources & resource, int clientBandwidth, int clientPort){
+Client* createClient(Resources & resource, int clientBandwidth, int clientPort){
 	Client newClient;
 	newClient.bandwidth = clientBandwidth;
 	newClient.port = clientPort;
-
-	addClient(newClient);
+	
 	resource.remainingBandwidth -= clientBandwidth;
+	return addClient(newClient);
 }
 
 void handleConnection(void * ptr){
@@ -236,7 +245,11 @@ void handleConnection(void * ptr){
 	int port = data->port;
 	SOCKET ClientSocket = data->ClientSocket;
 
-	//Call function to start streaming data here
+	// Start streaming data to client
+	GstServer::initPipeline(data->gstData);
+	GstServer::buildPipeline(data->gstData);
+	GstServer::setPipelineToRun(data->gstData);
+	GstServer::waitForEosOrError(data->gstData);
 
 	bool endStream = false;
 	while(endStream == false){
@@ -245,7 +258,6 @@ void handleConnection(void * ptr){
 
 		if(buffer[1] == STOP){
 			//Call function to stop the stream
-
 
 			removeClient(buffer[0]);
 
@@ -302,6 +314,7 @@ void handleConnection(void * ptr){
 		}
 	}
 
+	GstServer::stopAndFreeResources(data->gstData);
 	closesocket(ClientSocket);
 	_endthread();
 }

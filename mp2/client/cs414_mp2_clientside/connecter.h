@@ -28,7 +28,7 @@ typedef struct Settings{
 	int mode;
 	int rate;
 	int resolution;
-	char * ip;
+	char *ip;
 	int messagePort;
 	int videoPort;
 	int audioPort;

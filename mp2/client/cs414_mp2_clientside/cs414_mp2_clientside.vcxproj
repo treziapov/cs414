@@ -20,15 +20,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="connecter.cpp" />
+    <ClCompile Include="gst_client.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="connecter.h" />
+    <ClInclude Include="gst_client.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{34B87E4C-AACC-4C3E-B153-E4BF0B4B9DA8}</ProjectGuid>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <ProjectName>client</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
