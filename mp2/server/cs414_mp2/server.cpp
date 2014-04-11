@@ -4,6 +4,16 @@
 #include <direct.h>
 #include "listener.h"
 
+
+
+//Saves the current bandwidth to resource.txt (for the clientside)
+void saveBandwidth(int bandwidth){
+	FILE * myFile;
+	myFile = fopen("resource.txt", "w+");
+
+	fclose(myFile);
+}
+
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
 	char path[FILENAME_MAX];
@@ -15,9 +25,10 @@ int getBandwidth(){
 	FILE * myFile = fopen("resource.txt", "r");
 	if (!myFile) {
 		printf("Couldn't open the file\n");
-		return -1;
+		saveBandwidth(1000000000);
 	}
-
+	fclose(myFile);
+	myFile = fopen("resource.txt", "r");
 	fseek(myFile, 0, SEEK_END);
 	long fileSize = ftell(myFile);
 	fseek(myFile, 0, SEEK_SET);
@@ -30,17 +41,9 @@ int getBandwidth(){
 
 	return atoi(buffer);
 }
-
-//Saves the current bandwidth to resource.txt (for the clientside)
-void saveBandwidth(int bandwidth){
-	FILE * myFile;
-	myFile = fopen("resource.txt", "w+");
-
-	fclose(myFile);
-}
-
 int main(int argc, char *argv[]){
-	int bandwidth = getBandwidth();
+	//int bandwidth = getBandwidth();
+	int bandwidth = 1000000000;
 	printf("server bandwidth: %d\n", bandwidth);
 	if (bandwidth == -1) {
 		bandwidth = 1000000000;

@@ -1,6 +1,6 @@
 #include "gst_server.h"
 
-void GstServer::initPipeline(GstData *data) {
+void GstServer::initPipeline(GstData *data, int videoPort, int audioPort) {
 	gst_init (NULL, NULL);
 	
 	data->videoSource = gst_element_factory_make ("videotestsrc", "videoSource");
