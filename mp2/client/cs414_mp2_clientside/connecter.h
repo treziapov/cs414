@@ -23,7 +23,21 @@
 #define RESOURCES_ERROR 1
 #define CONNECTION_ERROR 2
 
-void connect(char * ip, int mode, int resolution, int rate);
+typedef struct Settings{
+	int bandwidth;
+	int mode;
+	int rate;
+	int resolution;
+	char * ip;
+	int messagePort;
+	int videoPort;
+	int audioPort;
+} Settings;
+
+void connect(Settings * settingsData);
+
+int startStream(Settings * settingsData);
+
 void stopStream();
 
 void pauseStream();
@@ -33,3 +47,7 @@ void resumeStream();
 void rewindStream();
 
 void fastforwardStream();
+
+void switchMode();
+
+int changeResources(Settings * settingsData);

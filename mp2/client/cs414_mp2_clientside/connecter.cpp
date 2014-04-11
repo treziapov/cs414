@@ -20,7 +20,7 @@
 SOCKET ServerSocket;
 WSADATA wsaData;
 
-void connect(char * ip, int mode, int resolution, int rate){
+void connect(Settings * settingsData){
 	SOCKET ConnectSocket = INVALID_SOCKET;
 	ServerSocket = INVALID_SOCKET;
 	struct addrinfo * result = NULL;
@@ -33,7 +33,7 @@ void connect(char * ip, int mode, int resolution, int rate){
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	iResult = getaddrinfo(ip, "6000", &hints, &result);
+	iResult = getaddrinfo(settingsData->ip, "6000", &hints, &result);
 
 	for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
@@ -45,25 +45,22 @@ void connect(char * ip, int mode, int resolution, int rate){
 	}
 	freeaddrinfo(result);
 
-	send(ConnectSocket, (char *)&mode, sizeof(int), 0);
-	send(ConnectSocket, (char *)&resolution, sizeof(int), 0);
-	send(ConnectSocket, (char *)&rate, sizeof(int), 0);
+	send(ConnectSocket, (char *)&settingsData->mode, sizeof(int), 0);
+	send(ConnectSocket, (char *)&settingsData->resolution, sizeof(int), 0);
+	send(ConnectSocket, (char *)&settingsData->rate, sizeof(int), 0);
 
 	int signal;
 	recv(ConnectSocket, (char *)&signal, sizeof(int), 0);
 
 	if(signal == ACCEPT){
-		int port;
-		recv(ConnectSocket, (char *)&port, sizeof(int), 0);
+		recv(ConnectSocket, (char *)&settingsData->messagePort, sizeof(int), 0);
 
-		int videoPort;
-		recv(ConnectSocket, (char *)&videoPort, sizeof(int), 0);
+		recv(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
 
-		int audioPort;
-		recv(ConnectSocket, (char *)&audioPort, sizeof(int), 0);
+		recv(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
 		
 		char buffer[512];
-		iResult = getaddrinfo(ip, itoa(port, buffer, 10), &hints, &result);
+		iResult = getaddrinfo(settingsData->ip, itoa(settingsData->messagePort, buffer, 10), &hints, &result);
 		
 		SOCKET newConnectSocket;
 		for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){
@@ -84,40 +81,42 @@ void connect(char * ip, int mode, int resolution, int rate){
 	}
 }
 
-bool isEnoughBandwidth(int mode, int resolution, int rate, int bandwidth){
+bool isEnoughBandwidth(Settings * settingsData){
 	int audioBitRate = 0;
-		if(mode == ACTIVE){
+		if(settingsData->mode == ACTIVE){
 			audioBitRate = 8000 * 16;
 		}
 
 		int bitsPerPixel = 24;
 
 		int videoPixelNumber = 0;
-		if(resolution == R240){
+		if(settingsData->resolution == R240){
 			videoPixelNumber = 320 * 240;
 		}else{
 			videoPixelNumber = 640 * 480;
 		}
 
-		int videoRate = rate;
+		int videoRate = settingsData->rate;
 
 		int neededBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
 
-		if(bandwidth - neededBandwidth < 0){
+		if(settingsData->bandwidth - neededBandwidth < 0){
 			return false;
 		}
 
 		return true;
 }
 
-int startStream(char * ip, int mode, int resolution, int rate, int bandwidth){
+int startStream(Settings * settingsData){
 	if(ServerSocket != INVALID_SOCKET){
-		if(isEnoughBandwidth(mode, resolution, rate, bandwidth)){
-			connect(ip, mode, resolution, rate);
+		if(isEnoughBandwidth(settingsData)){
+			connect(settingsData);
 			
 			if(ServerSocket == SOCKET_ERROR){
 				ServerSocket = INVALID_SOCKET;
 				return CONNECTION_ERROR;
+			}else{
+				//call function to start recieving data
 			}
 		}else{
 			return RESOURCES_ERROR;
@@ -162,13 +161,13 @@ void switchMode(){
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 }
 
-int changeResources(int mode, int resolution, int rate, int newBandwidth){
+int changeResources(Settings * settingsData){
 	//Check if we have enough bandwidth for the stream
-	if(isEnoughBandwidth(mode, resolution, rate, newBandwidth)){
+	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = NEW_RESOURCES;
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
-		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
+		send(ServerSocket, (char *)&settingsData->bandwidth, sizeof(int), 0);
 
 		recv(ServerSocket, (char *)&signal, sizeof(int), 0);
 
@@ -188,13 +187,3 @@ int changeResources(int mode, int resolution, int rate, int newBandwidth){
 		return RESOURCES_ERROR;
 	}
 }
-
-/*int main(int argc, char *argv[]){
-	connect("127.0.0.1", ACTIVE, R240, 15);
-
-	while(true);
-}*/
-
-
-
-
