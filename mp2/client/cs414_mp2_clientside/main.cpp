@@ -1,13 +1,18 @@
 #include <gtk-2.0\gtk\gtk.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string.h>
 #include "connecter.h"
+
 
 GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
+GtkWidget *current_bandwidth;
+GtkWidget *current_rate;
+
+
 bool started = 0;
-bool active = TRUE;
+bool active = true;
 Settings * settingsData;
 
 //Gets the saved bandwidth from resource.txt
@@ -112,7 +117,7 @@ void stopVideo(GtkWidget *widget, gpointer data){
 }
 void updateBandwidth(GtkWidget *widget, gpointer data){
 	saveBandwidth(atoi(GTK_ENTRY(bandwidth_entry)->text));
-
+	
 	settingsData->bandwidth = atoi(GTK_ENTRY(bandwidth_entry)->text);
 
 	int retval = changeResources(settingsData);
@@ -121,6 +126,13 @@ void updateBandwidth(GtkWidget *widget, gpointer data){
 		//report connection error
 
 		started = 0;
+	}
+	else{
+		char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
+		sprintf(numstr, "%d", getBandwidth());
+		char string[19] = "Current Bandwidth ";
+		strcat(string, numstr);
+		gtk_label_set_text(GTK_LABEL(current_bandwidth), string);
 	}
 }
 void updateVideo(GtkWidget *widget, gpointer data){
@@ -140,8 +152,36 @@ void updateVideo(GtkWidget *widget, gpointer data){
 
 				started = 0;
 			}
-		}else{
-			//report invalid rate
+			else{
+				//success. Can change rate on label.
+				char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
+				sprintf(numstr, "%d", rate);
+				char string[19] = "Current Rate ";
+				strcat(string, numstr);
+				gtk_label_set_text(GTK_LABEL(current_rate), string);
+			}
+		}
+		
+		
+	}
+	else{
+		//don't need to check or set rate. Rate is set to 10 at mode switch
+		
+
+		int retval = changeResources(settingsData);
+
+		if(retval == CONNECTION_ERROR){
+			//report connection error
+
+			started = 0;
+		}else if(retval == RESOURCES_ERROR){
+			//report resources error
+
+			started = 0;
+		}
+		else{
+			//Success. Can change the rate on label.
+			gtk_label_set_text(GTK_LABEL(current_rate), "Current Rate: 10");
 		}
 	}
 }
@@ -150,6 +190,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 */
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
+	printf("%d", getBandwidth());
 	GtkWidget *mainWindow;		// Contains all other windows
 	GtkWidget *videoWindow;		// Contains the video
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
@@ -164,11 +205,17 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	
 
 	
-
+	
+	
+	char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
+	char stringHead[19] = "Current Bandwidth ";
+	sprintf(numstr, "%d", getBandwidth());
+	strcat(stringHead, numstr);
 	// Informational
 	GtkWidget *video_label = gtk_label_new("Video:");
+	current_bandwidth = gtk_label_new(stringHead);
+	current_rate = gtk_label_new("Current Rate: 15");
 	
-
 	gtk_init(&argc, &argv);
    
 	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -250,7 +297,8 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Rate:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (options), videoRate_entry, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), updateVideo_button, FALSE, FALSE, 2);
-
+	gtk_box_pack_start (GTK_BOX (options), current_bandwidth, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), current_rate, FALSE, FALSE, 1);
 
 
 
