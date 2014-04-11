@@ -15,8 +15,8 @@ void GstServer::initPipeline(GstData *data) {
 	
 	data->pipeline = gst_pipeline_new ("streaming_server_pipeline");
 	
-	g_object_set (data->videoUdpSink, "host", (data->clientIp == "127.0.0.1" ? "localhost" : data->clientIp), "port", VIDEO_PORT, NULL);
-	g_object_set (data->audioUdpSink, "host", (data->clientIp == "127.0.0.1" ? "localhost" : data->clientIp), "port", AUDIO_PORT, NULL);
+	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", VIDEO_PORT, NULL);
+	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", AUDIO_PORT, NULL);
 	
 	if (!data->pipeline || !data->videoSource || !data->videoEncoder || 
 		!data->videoRtpPay || !data->videoUdpSink) {

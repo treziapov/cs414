@@ -46,13 +46,5 @@ int main(int argc, char *argv[]){
 		bandwidth = 1000000000;
 	}
 	init_listener(bandwidth);
-	//GstData gstData;
-	//gstData.mode = Active;
-	//gstData.clientIp = "localhost";
-	//GstServer::initPipeline(&gstData);
-	//GstServer::buildPipeline(&gstData);
-	//GstServer::setPipelineToRun(&gstData);
-	//GstServer::waitForEosOrError(&gstData);
-
 	return 0;
 }

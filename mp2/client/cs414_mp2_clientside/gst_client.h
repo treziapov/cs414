@@ -20,6 +20,8 @@ class GstClient {
 		static void buildPipeline(GstData *data);
 		static void setPipelineToRun(GstData *data);
 		static void waitForEosOrError(GstData *data);
+		static void pausePipeline(GstData *data);
+		static void stopPipeline(GstData *data);
 		static void stopAndFreeResources(GstData *data);
 };
 
