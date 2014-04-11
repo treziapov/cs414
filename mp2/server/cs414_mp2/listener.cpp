@@ -17,10 +17,10 @@
 
 Resources resource;
 
-Client* addClient(Client newClient){
+Client * addClient(Client * newClient){
 	resource.numClients++;
 
-	Client * newArray = new Client[resource.numClients];
+	Client ** newArray = new Client *[resource.numClients];
 
 	for(int i = 0; i < resource.numClients - 1; i++){
 		newArray[i] = resource.clients[i];
@@ -33,19 +33,20 @@ Client* addClient(Client newClient){
 	}
 	resource.clients = newArray;
 
-	return &resource.clients[resource.numClients - 1];
+	return resource.clients[resource.numClients - 1];
 }
 
 void removeClient(int port){
-	Client * newArray = new Client[resource.numClients - 1];
+	Client ** newArray = new Client *[resource.numClients - 1];
 
 	int j = 0;
 	for(int i = 0; i < resource.numClients; i++){
-		if(i != j || resource.clients[i].port != port){
+		if(i != j || resource.clients[i]->port != port){
 			newArray[j] = resource.clients[i];
 			j++;
 		}else{
-			resource.remainingBandwidth += resource.clients[i].bandwidth;
+			resource.remainingBandwidth += resource.clients[i]->bandwidth;
+			delete resource.clients[i];
 		}
 	}
 
@@ -57,17 +58,25 @@ void removeClient(int port){
 
 int findClientBandwidth(int port){
 	for(int i = 0; i < resource.numClients; i++){
-		if(resource.clients[i].port == port){
-			return resource.clients[i].bandwidth;
+		if(resource.clients[i]->port == port){
+			return resource.clients[i]->bandwidth;
 		}
 	}
 }
 
 void updateClientBandwidth(int port, int newBandwidth){
 	for(int i = 0; i < resource.numClients; i++){
-		if(resource.clients[i].port == port){
-			resource.clients[i].bandwidth = newBandwidth;
+		if(resource.clients[i]->port == port){
+			resource.clients[i]->bandwidth = newBandwidth;
 			return;
+		}
+	}
+}
+
+Client * findClient(int port){
+	for(int i = 0; i < resource.numClients; i++){
+		if(resource.clients[i]->port == port){
+			return resource.clients[i];
 		}
 	}
 }
@@ -126,7 +135,7 @@ void init_listener(int totalBandwidth){
 
 	int currentPort = 6001;
 	int videoPort = 7001;
-	int audioPort = 8001;\
+	int audioPort = 8001;
 
 	while (true) {
 		SOCKADDR_IN clientInfo = {0};
@@ -163,7 +172,7 @@ void init_listener(int totalBandwidth){
 			printf("client rejected, not enough bandwidth\n");
 		}else{
 			//Create the client in the bandwidth table
-			Client *currentClient = createClient(resource, clientBandwidth, currentPort);
+			Client * currentClient = createClient(resource, clientBandwidth, currentPort);
 			
 			//Initialize data to send to new thread
 			ThreadData * data = new ThreadData();
@@ -231,10 +240,10 @@ int calculateResources(Resources rsc, Request req){
 	return clientBandwidth;
 }
 
-Client* createClient(Resources & resource, int clientBandwidth, int clientPort){
-	Client newClient;
-	newClient.bandwidth = clientBandwidth;
-	newClient.port = clientPort;
+Client * createClient(Resources & resource, int clientBandwidth, int clientPort){
+	Client * newClient = new Client();
+	newClient->bandwidth = clientBandwidth;
+	newClient->port = clientPort;
 	
 	resource.remainingBandwidth -= clientBandwidth;
 	return addClient(newClient);

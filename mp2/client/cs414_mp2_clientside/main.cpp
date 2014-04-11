@@ -97,6 +97,11 @@ void playVideo(GtkWidget *widget,  gpointer data){
 
 		if(retval == 0){
 			started=1;
+
+			gstData.mode = Active;
+			GstClient::initPipeline(&gstData);
+			GstClient::buildPipeline(&gstData);
+			GstClient::setPipelineToRun(&gstData);
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
 		}else{
@@ -309,11 +314,11 @@ int main(int argc, char* argv[])
 	settingsData.resolution = R240;
 	connect(&settingsData);
 
-	gstData.mode = ACTIVE;
+	gstData.mode = Active;
 	GstClient::initPipeline(&gstData);
 	GstClient::buildPipeline(&gstData);
 	GstClient::setPipelineToRun(&gstData);
-	//GstClient::waitForEosOrError(&gstData);
+
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
     gtk_main();
