@@ -142,7 +142,10 @@ void init_listener(int totalBandwidth){
 		}
 
 		clientIp = inet_ntoa(clientInfo.sin_addr);
-		printf("Connected client on %s\n", clientIp);
+		if (strcmp(clientIp, "127.0.0.1") == 0) {
+			clientIp = "localhost";
+		}
+		printf("Connected client on: %s\n", clientIp);
 
 		//Get the desired stream settings from the client
 		Request newRequest;
@@ -157,6 +160,7 @@ void init_listener(int totalBandwidth){
 			int signal = REJECT;
 			send(ClientSocket, (char *)&signal, sizeof(int), 0);
 			closesocket(ClientSocket);
+			printf("client rejected, not enough bandwidth\n");
 		}else{
 			//Create the client in the bandwidth table
 			Client *currentClient = createClient(resource, clientBandwidth, currentPort);
@@ -237,6 +241,7 @@ Client* createClient(Resources & resource, int clientBandwidth, int clientPort){
 }
 
 void handleConnection(void * ptr){
+	printf("connection handler started on a new thread\n");
 	ThreadData * data = (ThreadData *)ptr;
 	
 	int videoRate = data->rate;
@@ -246,6 +251,7 @@ void handleConnection(void * ptr){
 	SOCKET ClientSocket = data->ClientSocket;
 
 	// Start streaming data to client
+	printf("streaming to: %s\n", data->gstData->clientIp);
 	GstServer::initPipeline(data->gstData);
 	GstServer::buildPipeline(data->gstData);
 	GstServer::setPipelineToRun(data->gstData);

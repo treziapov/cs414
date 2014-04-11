@@ -1,12 +1,22 @@
 #include <stdlib.h>
 #include <stdio.h>
-
+//#include <iostream>
+#include <direct.h>
 #include "listener.h"
 
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
-	FILE * myFile;
-	myFile = fopen("server_resource.txt", "r");
+	char path[FILENAME_MAX];
+	if (!_getcwd(path, sizeof(path))) {
+		return errno;
+	}
+	printf ("Current directory: %s\n", path);
+
+	FILE * myFile = fopen("resource.txt", "r");
+	if (!myFile) {
+		printf("Couldn't open the file\n");
+		return -1;
+	}
 
 	fseek(myFile, 0, SEEK_END);
 	long fileSize = ftell(myFile);
@@ -15,7 +25,7 @@ int getBandwidth(){
 	char * buffer = new char[fileSize + 1];
 	fread(buffer, fileSize, 1, myFile);
 	buffer[fileSize] = '\0';
-
+	printf(buffer);
 	fclose(myFile);
 
 	return atoi(buffer);
@@ -31,8 +41,18 @@ void saveBandwidth(int bandwidth){
 
 int main(int argc, char *argv[]){
 	int bandwidth = getBandwidth();
-
+	printf("server bandwidth: %d\n", bandwidth);
+	if (bandwidth == -1) {
+		bandwidth = 1000000000;
+	}
 	init_listener(bandwidth);
+	//GstData gstData;
+	//gstData.mode = Active;
+	//gstData.clientIp = "localhost";
+	//GstServer::initPipeline(&gstData);
+	//GstServer::buildPipeline(&gstData);
+	//GstServer::setPipelineToRun(&gstData);
+	//GstServer::waitForEosOrError(&gstData);
 
 	return 0;
 }

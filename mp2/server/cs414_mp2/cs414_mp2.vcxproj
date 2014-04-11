@@ -27,6 +27,9 @@
     <ClInclude Include="gst_server.h" />
     <ClInclude Include="listener.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="resource.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{67085735-3A4F-4059-9149-4DAA7E1FA5BE}</ProjectGuid>

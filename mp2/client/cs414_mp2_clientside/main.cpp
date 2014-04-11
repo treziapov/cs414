@@ -304,16 +304,16 @@ int main(int argc, char* argv[])
 {
 	settingsData.bandwidth = getBandwidth();
 	settingsData.ip = "localhost";	// TODO: parameterize
-	settingsData.mode = Active;
+	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
 	connect(&settingsData);
 
-	gstData.mode = Active;
+	gstData.mode = ACTIVE;
 	GstClient::initPipeline(&gstData);
 	GstClient::buildPipeline(&gstData);
 	GstClient::setPipelineToRun(&gstData);
-
+	//GstClient::waitForEosOrError(&gstData);
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
     gtk_main();
