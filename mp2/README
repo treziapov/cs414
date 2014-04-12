@@ -1,0 +1,10 @@
+The files client.cpp and server.cpp implement the Gstreamer pipelines in linux.
+
+To compile:
+	make
+
+To run server:
+	./streamer	
+	
+To run client:
+	./receiever
