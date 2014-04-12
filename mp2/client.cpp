@@ -41,10 +41,10 @@ void buildPipelineForMode(Mode mode, GstElement *pipeline) {
 			g_printerr("Couldn't link: videoDecoder - videoSink.\n");
 		}
 		if (!gst_element_link (audioUdpSource, audioRtpDepay)) {
-			g_printerr("Couldn't link: audioUdpSource - audioRtpDepay");
+			g_printerr("Couldn't link: audioUdpSource - audioRtpDepay.\n");
 		}	
 		if (!gst_element_link (audioRtpDepay, audioDecoder)) {
-			g_printerr("Couldn't link: audioRtpDepay - audioDecoder");
+			g_printerr("Couldn't link: audioRtpDepay - audioDecoder.\n");
 		}
 		if (!gst_element_link (audioDecoder, audioSink)) {
 			g_printerr("Couldn't link: audioDecoder - audioSink.\n");
