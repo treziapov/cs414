@@ -23,9 +23,7 @@ GstData gstData;
 void saveBandwidth(int bandwidth){
 	FILE * myFile;
 	myFile = fopen("C:/client_resource.txt", "w+");
-
 	fprintf(myFile, "%d", bandwidth);
-
 	fclose(myFile);
 }
 //Gets the saved bandwidth from resource.txt
@@ -375,14 +373,6 @@ int main(int argc, char* argv[])
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
 	
-	/*
-	connect(&settingsData);
-
-	gstData.mode = Active;
-	GstClient::initPipeline(&gstData);
-	GstClient::buildPipeline(&gstData);
-	GstClient::setPipelineToRun(&gstData);
-	*/
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
     gtk_main();
