@@ -6,6 +6,7 @@
 #include "connecter.h"
 #include "gst_client.h"
 
+GtkWidget *mainWindow;
 GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
 GtkWidget *current_bandwidth;
@@ -72,8 +73,20 @@ void updateOptions(GtkWidget *widget, gpointer data){
 
 	if(retval == CONNECTION_ERROR){
 		//report connection error or server resource error
+		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "connection error or server resource error"
+                                             )));
 	}else if(retval == RESOURCES_ERROR){
 		//report client side error
+		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "client side error"
+                                             )));
 	}
 }
 
@@ -108,8 +121,20 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			GstClient::setPipelineToRun(&gstData);
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "Connection error or server resource error"
+                                             )));
 		}else{
 			//report client side error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "There was a client-side error."
+                                             )));
 		}
 	}
 	else{
@@ -143,6 +168,12 @@ void updateBandwidth(GtkWidget *widget, gpointer data){
 	int retval = changeResources(&settingsData);
 	if(retval == CONNECTION_ERROR){
 		//report connection error
+		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "Connection Error"
+                                             )));
 		started = 0;
 	}
 	else{
@@ -163,9 +194,21 @@ void updateVideo(GtkWidget *widget, gpointer data){
 			int retval = changeResources(&settingsData);
 			if(retval == CONNECTION_ERROR){
 				//report connection error
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "Connection Error"
+                                             )));
 				started = 0;
 			}else if(retval == RESOURCES_ERROR){
 				//report resources error
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "There was a resouce error."
+                                             )));
 				started = 0;
 			}
 			else{
@@ -183,9 +226,21 @@ void updateVideo(GtkWidget *widget, gpointer data){
 		int retval = changeResources(&settingsData);
 		if(retval == CONNECTION_ERROR){
 			//report connection error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "Connection error."
+                                             )));
 			started = 0;
 		}else if(retval == RESOURCES_ERROR){
 			//report resources error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
+                                             GTK_MESSAGE_ERROR,
+                                             GTK_BUTTONS_NONE,
+                                             "There was a resouce error."
+                                             )));
 			started = 0;
 		}
 		else{
@@ -200,7 +255,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	printf("%d", getBandwidth());
-	GtkWidget *mainWindow;		// Contains all other windows
+	;		// Contains all other windows
 	GtkWidget *videoWindow;		// Contains the video
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
 	GtkWidget *mainHBox;		// Hbox, holds video window and option box
@@ -302,8 +357,10 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (mainBox), videoControls, FALSE, FALSE, 2);
 	gtk_container_add (GTK_CONTAINER (mainWindow), mainBox);
 	gtk_window_set_default_size (GTK_WINDOW (mainWindow), 1280, 960);
-   
+    
 	gtk_widget_show_all (mainWindow);
+	//GTK_DIALOG_DESTROY_WITH_PARENT
+	
 }
 
 /*
