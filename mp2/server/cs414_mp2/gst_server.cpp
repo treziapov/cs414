@@ -1,3 +1,7 @@
+#define ACTIVE 1
+
+#include <process.h>
+
 #include "gst_server.h"
 
 void GstServer::initPipeline(GstData *data, int videoPort, int audioPort) {
@@ -30,27 +34,41 @@ void GstServer::initPipeline(GstData *data, int videoPort, int audioPort) {
 	}
 }
 
-void GstServer::buildPipeline(GstData *data) {
-	gst_bin_add_many (GST_BIN (data->pipeline), 
-		data->videoSource, data->videoEncoder, data->videoRtpPay, data->videoUdpSink,
-		data->audioSource, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
-	if (!gst_element_link (data->videoSource, data->videoEncoder)) {
-		g_printerr("Couldn't link: videoSource - encoder.\n");
-	}
-	if (!gst_element_link (data->videoEncoder, data->videoRtpPay)) {
-		g_printerr("Couldn't link: encoder - videoRtpPay.\n");
-	}	
-	if (!gst_element_link (data->videoRtpPay, data->videoUdpSink)) {
-		g_printerr("Couldn't link: videoRtpPay - videoUdpSink.\n");
-	}
-	if (!gst_element_link (data->audioSource, data->audioEncoder)) {
-		g_printerr("Couldn't link: audioSource - audioEncoder.\n");
-	}
-	if (!gst_element_link (data->audioEncoder, data->audioRtpPay)) {
-		g_printerr("Couldn't link: audioEncoder - audioRtpPay.\n");
-	}	
-	if (!gst_element_link (data->audioRtpPay, data->audioUdpSink)) {
-		g_printerr("Couldn't link: audioRtpPay - audioUdpSink.\n");
+void GstServer::buildPipeline(GstData *data, int streamMode) {
+	if(streamMode == ACTIVE){
+		gst_bin_add_many (GST_BIN (data->pipeline), 
+			data->videoSource, data->videoEncoder, data->videoRtpPay, data->videoUdpSink,
+			data->audioSource, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
+		if (!gst_element_link (data->videoSource, data->videoEncoder)) {
+			g_printerr("Couldn't link: videoSource - encoder.\n");
+		}
+		if (!gst_element_link (data->videoEncoder, data->videoRtpPay)) {
+			g_printerr("Couldn't link: encoder - videoRtpPay.\n");
+		}	
+		if (!gst_element_link (data->videoRtpPay, data->videoUdpSink)) {
+			g_printerr("Couldn't link: videoRtpPay - videoUdpSink.\n");
+		}
+		if (!gst_element_link (data->audioSource, data->audioEncoder)) {
+			g_printerr("Couldn't link: audioSource - audioEncoder.\n");
+		}
+		if (!gst_element_link (data->audioEncoder, data->audioRtpPay)) {
+			g_printerr("Couldn't link: audioEncoder - audioRtpPay.\n");
+		}	
+		if (!gst_element_link (data->audioRtpPay, data->audioUdpSink)) {
+			g_printerr("Couldn't link: audioRtpPay - audioUdpSink.\n");
+		}
+	}else{
+		gst_bin_add_many (GST_BIN (data->pipeline), 
+			data->videoSource, data->videoEncoder, data->videoRtpPay, data->videoUdpSink, NULL);
+		if (!gst_element_link (data->videoSource, data->videoEncoder)) {
+			g_printerr("Couldn't link: videoSource - encoder.\n");
+		}
+		if (!gst_element_link (data->videoEncoder, data->videoRtpPay)) {
+			g_printerr("Couldn't link: encoder - videoRtpPay.\n");
+		}	
+		if (!gst_element_link (data->videoRtpPay, data->videoUdpSink)) {
+			g_printerr("Couldn't link: videoRtpPay - videoUdpSink.\n");
+		}
 	}
 }
 
@@ -65,7 +83,8 @@ void GstServer::setPipelineToRun(GstData *data) {
 	}
 }
 
-void GstServer::waitForEosOrError(GstData *data) {
+void GstServer::waitForEosOrError(void *voidData) {
+	GstData * data = (GstData *)voidData;
 	GstBus *bus = gst_element_get_bus (data->pipeline);
 	GstMessage *message = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, 
 		(GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
@@ -93,6 +112,7 @@ void GstServer::waitForEosOrError(GstData *data) {
 		gst_message_unref (message);
 	}
 	gst_object_unref (bus);
+	_endthread();
 }
 
 void GstServer::stopAndFreeResources(GstData *data) {

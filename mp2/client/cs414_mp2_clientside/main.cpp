@@ -4,6 +4,8 @@
 #include <gdk/gdkwin32.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <process.h>
 
 #include "connecter.h"
 #include "gst_client.h"
@@ -80,7 +82,7 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), FALSE);
 
 		settingsData.rate = 10;
-		settingsData.mode = Passive;
+		settingsData.mode = 2;
 	}
 	else{
 		active=true;
@@ -88,27 +90,29 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), TRUE);
 
 		settingsData.rate = 15;
-		settingsData.mode = Active;
+		settingsData.mode = 1;
 	}
 
-	int retval = switchMode(&settingsData);
+	if(started != 0){
+		int retval = switchMode(&settingsData);
 
-	if(retval == CONNECTION_ERROR){
-		//report connection error or server resource error
-		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
-			GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_ERROR,
-			GTK_BUTTONS_NONE,
-			"connection error or server resource error"
-		)));
-	}else if(retval == RESOURCES_ERROR){
-		//report client side error
-		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "client side error"
-                                             )));
+		if(retval == CONNECTION_ERROR){
+			//report connection error or server resource error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+				                                 GTK_DIALOG_DESTROY_WITH_PARENT ,
+				                                 GTK_MESSAGE_ERROR,
+				                                 GTK_BUTTONS_NONE,
+				                                 "connection error or server resource error"
+				                                 )));
+		}else if(retval == RESOURCES_ERROR){
+			//report client side error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+				                                 GTK_DIALOG_DESTROY_WITH_PARENT ,
+				                                 GTK_MESSAGE_ERROR,
+				                                 GTK_BUTTONS_NONE,
+				                                 "client side error"
+				                                 )));
+		}
 	}
 }
 
@@ -136,7 +140,6 @@ void playVideo(GtkWidget *widget,  gpointer data){
 
 		if(retval == 0){
 			started=1;
-			
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
@@ -213,7 +216,7 @@ void updateBandwidth(GtkWidget *widget, gpointer data){
 
 void updateVideo(GtkWidget *widget, gpointer data){
 	int rate = atoi(GTK_ENTRY(videoRate_entry)->text);
-	if(settingsData.mode == Active){
+	if(settingsData.mode == ACTIVE){
 		if(rate >= 15 && rate <= 25){
 			settingsData.rate = rate;
 
@@ -280,7 +283,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 */
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
-	printf("%d", getBandwidth());
+	printf("%d\n", getBandwidth());
 	;		// Contains all other windows
 	GtkWidget *videoWindow;		// Contains the video
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
