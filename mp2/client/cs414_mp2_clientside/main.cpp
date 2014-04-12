@@ -17,11 +17,25 @@ bool active = true;
 Settings settingsData;
 GstData gstData;
 
+
+//Saves the current bandwidth to resource.txt (for the clientside)
+void saveBandwidth(int bandwidth){
+	FILE * myFile;
+	myFile = fopen("C:/client_resource.txt", "w+");
+
+	fprintf(myFile, "%d", bandwidth);
+
+	fclose(myFile);
+}
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
 	FILE * myFile;
 	myFile = fopen("C:/client_resource.txt", "r");
-
+	if(!myFile) {
+		saveBandwidth(1000000000);
+	}
+	fclose(myFile);
+	myFile = fopen("C:/client_resource.txt", "r");
 	fseek(myFile, 0, SEEK_END);
 	long fileSize = ftell(myFile);
 	fseek(myFile, 0, SEEK_SET);
@@ -33,16 +47,6 @@ int getBandwidth(){
 	fclose(myFile);
 
 	return atoi(buffer);
-}
-
-//Saves the current bandwidth to resource.txt (for the clientside)
-void saveBandwidth(int bandwidth){
-	FILE * myFile;
-	myFile = fopen("C:/client_resource.txt", "w+");
-
-	fprintf(myFile, "%d", bandwidth);
-
-	fclose(myFile);
 }
 
 //CALLBACK FUNCTIONS
@@ -99,7 +103,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			started=1;
 
 			gstData.mode = Active;
-			GstClient::initPipeline(&gstData);
+			GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
 			GstClient::buildPipeline(&gstData);
 			GstClient::setPipelineToRun(&gstData);
 		}else if(retval == CONNECTION_ERROR){
@@ -307,18 +311,21 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 */
 int main(int argc, char* argv[])
 {
-	settingsData.bandwidth = getBandwidth();
+	//settingsData.bandwidth = getBandwidth();
+	settingsData.bandwidth = 1000000000;
 	settingsData.ip = "localhost";	// TODO: parameterize
 	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
+	
+	/*
 	connect(&settingsData);
 
 	gstData.mode = Active;
 	GstClient::initPipeline(&gstData);
 	GstClient::buildPipeline(&gstData);
 	GstClient::setPipelineToRun(&gstData);
-
+	*/
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
     gtk_main();

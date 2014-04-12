@@ -113,7 +113,6 @@ int startStream(Settings * settingsData){
 				ServerSocket = INVALID_SOCKET;
 				return CONNECTION_ERROR;
 			}else{
-				//call function to start recieving data
 			}
 		}else{
 			return RESOURCES_ERROR;

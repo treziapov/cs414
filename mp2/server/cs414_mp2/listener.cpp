@@ -261,7 +261,7 @@ void handleConnection(void * ptr){
 
 	// Start streaming data to client
 	printf("streaming to: %s\n", data->gstData->clientIp);
-	GstServer::initPipeline(data->gstData);
+	GstServer::initPipeline(data->gstData, data->videoPort, data->audioPort);
 	GstServer::buildPipeline(data->gstData);
 	GstServer::setPipelineToRun(data->gstData);
 	GstServer::waitForEosOrError(data->gstData);

@@ -1,6 +1,6 @@
 #include "gst_client.h"
 
-void GstClient::initPipeline(GstData *data) {
+void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	gst_init (NULL, NULL);
 	
 	data->videoUdpSource = gst_element_factory_make ("udpsrc", "videoUdpSource");
@@ -8,37 +8,60 @@ void GstClient::initPipeline(GstData *data) {
 	data->videoRtpDepay = gst_element_factory_make ("rtpjpegdepay", "videoRtpDepay");
 	data->videoDecoder = gst_element_factory_make ("ffdec_mjpeg", "videoDecoder");
 	data->videoSink = gst_element_factory_make ("autovideosink", "videoSink");
+	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
 	
 	data->audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
 	data->audioUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
 	data->audioRtpDepay = gst_element_factory_make ("rtppcmudepay", "audioRtpDepay");
 	data->audioDecoder = gst_element_factory_make ("mulawdec", "audioDecoder");
 	data->audioSink = gst_element_factory_make ("autoaudiosink", "audioSink");
-	
+
+	data->tee = gst_element_factory_make("tee", "tee");
+	data->appSink = gst_element_factory_make("appsink", "appSink");
+	data->appQueue = gst_element_factory_make("queue", "appQueue");
+	data->jitterBuffer = gst_element_factory_make("gstrtpjitterbuffer", "jitterbuffer");
 	data->pipeline = gst_pipeline_new ("streaming_client_pipeline");
 	
 	char videoUri[32], audioUri[32];
-	sprintf (videoUri, "udp://localhost:%d", VIDEO_PORT);
-	sprintf (audioUri, "udp://localhost:%d", AUDIO_PORT);
+	sprintf (videoUri, "udp://localhost:%d", videoPort);
+	sprintf (audioUri, "udp://localhost:%d", audioPort);
 	g_object_set (data->videoUdpSource, "uri", videoUri, "caps", data->videoUdpCaps, NULL);
 	g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
+	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
 	
 	if (!data->pipeline ||
 		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || 
-		!data->videoDecoder || !data->videoSink ||
+		!data->videoDecoder || !data->videoSink || !data->videoQueue ||
 		!data->audioUdpSource || !data->audioUdpCaps || !data->audioRtpDepay || 
-		!data->audioDecoder || !data->audioSink) {
+		!data->audioDecoder || !data->audioSink || 
+		!data->jitterBuffer || !data->tee || !data->appSink || !data->appQueue) {
 			g_printerr ("Not all elements could be created.\n");
 	}
-}
 
+	//g_object_set (data->appSink, "emit-signals", true, "caps", data->videoUdpCaps, NULL);	
+	//g_signal_connect (data->appSink, "new-buffer", G_CALLBACK (newBuffer), data);
+}
+static void newBuffer (GstElement *sink, GstData *data) {
+  GstBuffer *buffer;
+   
+  /* Retrieve the buffer */
+  g_signal_emit_by_name (sink, "pull-buffer", &buffer);
+  if (buffer) {
+    /* The only thing we do in this example is print a * to indicate a received buffer */
+    g_print ("*");
+    gst_buffer_unref (buffer);
+  }
+}
 void GstClient::buildPipeline(GstData *data) {
 	if (data->mode == Passive) {
 		gst_bin_add_many (GST_BIN (data->pipeline), 
 			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder,data-> videoSink, NULL);
-		if (!gst_element_link (data->videoUdpSource, data->videoRtpDepay)) {
-			g_printerr("Couldn't link: videoUdpSource - videoRtpDepay.\n");
+		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
+			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
 		}	
+		if(!gst_element_link (data->jitterBuffer, data->videoRtpDepay)) {
+			g_printerr("Couldn't link: jitterBuffer - videoRtpDepay.\n");
+		}
 		if (!gst_element_link (data->videoRtpDepay, data->videoDecoder)) {
 			g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
 		}
