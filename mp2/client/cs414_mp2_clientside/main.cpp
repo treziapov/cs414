@@ -117,6 +117,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
 			GstClient::buildPipeline(&gstData);
 			GstClient::setPipelineToRun(&gstData);
+			GstClient::waitForEosOrError(&gstData);
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
@@ -372,7 +373,7 @@ int main(int argc, char* argv[])
 	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
-	
+
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
     gtk_main();

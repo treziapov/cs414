@@ -15,8 +15,10 @@ void GstServer::initPipeline(GstData *data, int videoPort, int audioPort) {
 	
 	data->pipeline = gst_pipeline_new ("streaming_server_pipeline");
 	
-	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", VIDEO_PORT, NULL);
-	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", AUDIO_PORT, NULL);
+	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", videoPort, NULL);
+	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", audioPort, NULL);
+
+	printf("Streaming video to port %d, and audio to port %d\n", videoPort, audioPort);
 	
 	if (!data->pipeline || !data->videoSource || !data->videoEncoder || 
 		!data->videoRtpPay || !data->videoUdpSink) {
@@ -59,7 +61,7 @@ void GstServer::setPipelineToRun(GstData *data) {
 		g_object_unref (data->pipeline);
 	} 
 	else {
-		g_print("Waiting for stream.\n");	
+		g_print("Waiting for client.\n");	
 	}
 }
 

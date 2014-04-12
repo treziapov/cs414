@@ -28,6 +28,8 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	g_object_set (data->videoUdpSource, "uri", videoUri, "caps", data->videoUdpCaps, NULL);
 	g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
 	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
+
+	printf("Streaming video from port %d and audio from port %d\n", videoPort, audioPort);
 	
 	if (!data->pipeline ||
 		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || 

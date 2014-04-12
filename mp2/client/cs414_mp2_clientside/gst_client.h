@@ -1,6 +1,6 @@
 #include <gst/gst.h>
 
-enum Mode {	Active = 0, Passive = 1 };
+enum Mode {	Active = 1, Passive = 2 };
 
 class GstData {
 	public:

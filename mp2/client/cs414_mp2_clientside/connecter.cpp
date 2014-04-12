@@ -51,9 +51,7 @@ void connect(Settings * settingsData){
 
 	if(signal == ACCEPT){
 		recv(ConnectSocket, (char *)&settingsData->messagePort, sizeof(int), 0);
-
 		recv(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
-
 		recv(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
 		
 		char buffer[512];
