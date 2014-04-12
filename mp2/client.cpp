@@ -1,11 +1,59 @@
 #include <gst/gst.h>
 
-int main(int argc, char *argv[]) {
-	const gint listeningPort = 5000;
-	GstElement *pipeline; 
-	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink;
-	GstCaps *videoUdpCaps;
+enum Mode {
+	Active, 
+	Passive
+};
 
+Mode mode;
+const gint videoPort = 5000;
+const gint audioPort = 5001;
+GstElement *pipeline;
+GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink;
+GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink;
+GstCaps *videoUdpCaps, *audioUdpCaps;
+
+void buildPipelineForMode(Mode mode, GstElement *pipeline) {
+	if (mode == Passive) {
+		gst_bin_add_many (GST_BIN (pipeline), 
+			videoUdpSource, videoRtpDepay, videoDecoder, videoSink, NULL);
+		if (!gst_element_link (videoUdpSource, videoRtpDepay)) {
+			g_printerr("Couldn't link: videoUdpSource - videoRtpDepay.\n");
+		}	
+		if (!gst_element_link (videoRtpDepay, videoDecoder)) {
+			g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
+		}
+		if (!gst_element_link (videoDecoder, videoSink)) {
+			g_printerr("Couldn't link: videoDecoder - videoSink.\n");
+		}
+	}
+	else if (mode == Active) {
+		gst_bin_add_many (GST_BIN (pipeline),
+			videoUdpSource, videoRtpDepay, videoDecoder, videoSink, 
+			audioUdpSource, audioRtpDepay, audioDecoder, audioSink, NULL);
+		if (!gst_element_link (videoUdpSource, videoRtpDepay)) {
+			g_printerr("Couldn't link: videoUdpSource - videoRtpDepay.\n");
+		}	
+		if (!gst_element_link (videoRtpDepay, videoDecoder)) {
+			g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
+		}
+		if (!gst_element_link (videoDecoder, videoSink)) {
+			g_printerr("Couldn't link: videoDecoder - videoSink.\n");
+		}
+		if (!gst_element_link (audioUdpSource, audioRtpDepay)) {
+			g_printerr("Couldn't link: audioUdpSource - audioRtpDepay");
+		}	
+		if (!gst_element_link (audioRtpDepay, audioDecoder)) {
+			g_printerr("Couldn't link: audioRtpDepay - audioDecoder");
+		}
+		if (!gst_element_link (audioDecoder, audioSink)) {
+			g_printerr("Couldn't link: audioDecoder - audioSink.\n");
+		}
+	}
+}
+
+int main(int argc, char *argv[]) {
+	mode = Active;
 	gst_init (&argc, &argv);
 	
 	videoUdpSource = gst_element_factory_make ("udpsrc", "videoUdpSource");
@@ -13,27 +61,26 @@ int main(int argc, char *argv[]) {
 	videoRtpDepay = gst_element_factory_make ("rtpjpegdepay", "videoRtpDepay");
 	videoDecoder = gst_element_factory_make ("ffdec_mjpeg", "videoDecoder");
 	videoSink = gst_element_factory_make ("autovideosink", "videoSink");
+	
+	audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
+	audioUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
+	audioRtpDepay = gst_element_factory_make ("rtppcmudepay", "audioRtpDepay");
+	audioDecoder = gst_element_factory_make ("mulawdec", "audioDecoder");
+	audioSink = gst_element_factory_make ("autoaudiosink", "audioSink");
+	
 	pipeline = gst_pipeline_new ("streaming_client_pipeline");
 	
-	g_object_set (videoUdpSource, "port", listeningPort, "caps", videoUdpCaps, NULL);
+	g_object_set (videoUdpSource, "port", videoPort, "caps", videoUdpCaps, NULL);
+	g_object_set (audioUdpSource, "port", audioPort, "caps", audioUdpCaps, NULL);
 	
-	if (!pipeline || 
-		!videoUdpSource || !videoUdpCaps|| !videoRtpDepay || !videoDecoder || !videoSink) {
+	if (!pipeline ||
+		!videoUdpSource || !videoUdpCaps || !videoRtpDepay || !videoDecoder || !videoSink ||
+		!audioUdpSource || !audioUdpCaps || !audioRtpDepay || !audioDecoder || !audioSink) {
 			g_printerr ("Not all elements could be created.\n");
 			return -1;
 	}
 
-	gst_bin_add_many (GST_BIN (pipeline), 
-		videoUdpSource, videoRtpDepay, videoDecoder, videoSink, NULL);
-	if (!gst_element_link (videoUdpSource, videoRtpDepay)) {
-		g_printerr("Couldn't link: videoUdpSource - videoRtpDepay.\n");
-	}	
-	if (!gst_element_link (videoRtpDepay, videoDecoder)) {
-		g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
-	}
-	if (!gst_element_link (videoDecoder, videoSink)) {
-		g_printerr("Couldn't link: videoDecoder - videoSink.\n");
-	}
+	buildPipelineForMode(mode, pipeline);
 	
 	GstStateChangeReturn ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	if (ret == GST_STATE_CHANGE_FAILURE) {
