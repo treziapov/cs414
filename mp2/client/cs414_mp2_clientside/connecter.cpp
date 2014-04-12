@@ -17,6 +17,10 @@
 SOCKET ServerSocket;
 WSADATA wsaData;
 
+void sendServerSignal(int signal) {
+	send(ServerSocket, (char*)&signal, sizeof(int), 0); 
+}
+
 void connect(Settings * settingsData){
 	SOCKET ConnectSocket = INVALID_SOCKET;
 	ServerSocket = INVALID_SOCKET;
@@ -103,51 +107,44 @@ bool isEnoughBandwidth(Settings * settingsData){
 }
 
 int startStream(Settings * settingsData){
-	if(ServerSocket != INVALID_SOCKET){
-		if(isEnoughBandwidth(settingsData)){
-			connect(settingsData);
-			
-			if(ServerSocket == SOCKET_ERROR){
-				ServerSocket = INVALID_SOCKET;
-				return CONNECTION_ERROR;
-			}else{
-			}
-		}else{
-			return RESOURCES_ERROR;
-		}
-	}
-
+	//if(ServerSocket != INVALID_SOCKET){
+	//	if(isEnoughBandwidth(settingsData)){
+	//		connect(settingsData);
+	//		
+	//		if(ServerSocket == SOCKET_ERROR){
+	//			ServerSocket = INVALID_SOCKET;
+	//			return CONNECTION_ERROR;
+	//		}else{
+	//		}
+	//	}else{
+	//		return RESOURCES_ERROR;
+	//	}
+	//}
+	sendServerSignal(PLAY);
 	return 0;
 }
 
 void stopStream(){
-	int signal = STOP;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-
+	sendServerSignal(STOP);
 	closesocket(ServerSocket);
 	ServerSocket = INVALID_SOCKET;
-
 	WSACleanup();
 }
 
 void pauseStream(){
-	int signal = PAUSE;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(PAUSE);
 }
 
 void resumeStream(){
-	int signal = RESUME;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(RESUME);
 }
 
 void rewindStream(){
-	int signal = REWIND;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(REWIND);
 }
 
 void fastforwardStream(){
-	int signal = FAST_FORWARD;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(FAST_FORWARD);
 }
 
 int calculateBandwidth(Settings * settingsData){
@@ -166,9 +163,7 @@ int calculateBandwidth(Settings * settingsData){
 	}
 
 	int videoRate = settingsData->rate;
-
 	int clientBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
-
 	return clientBandwidth;
 }
 

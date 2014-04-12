@@ -1,10 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-//#include <iostream>
 #include <direct.h>
+
 #include "listener.h"
-
-
 
 //Saves the current bandwidth to resource.txt (for the clientside)
 void saveBandwidth(int bandwidth){

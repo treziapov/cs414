@@ -18,6 +18,7 @@
 #define FAST_FORWARD 5
 #define SWITCH_MODE 6
 #define NEW_RESOURCES 7
+#define PLAY 8
 
 //Error constants
 #define RESOURCES_ERROR 1
@@ -50,6 +51,10 @@ void fastforwardStream();
 
 int calculateBandwidth(Settings * settingsData);
 
+bool isEnoughBandwidth(Settings * settingsData);
+
 int switchMode(Settings * settingsData);
 
 int changeResources(Settings * settingsData);
+
+void sendServerSignal(int signal);

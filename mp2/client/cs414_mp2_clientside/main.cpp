@@ -1,7 +1,9 @@
-#include <gtk-2.0\gtk\gtk.h>
+#include <gtk-2.0/gtk/gtk.h>
+#include <gst/gst.h>
+#include <gst/interfaces/xoverlay.h>
+#include <gdk/gdkwin32.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "connecter.h"
 #include "gst_client.h"
@@ -17,6 +19,28 @@ bool started = 0;
 bool active = true;
 Settings settingsData;
 GstData gstData;
+
+/* 
+	This function is called when the GUI toolkit creates the physical mainWindow that will hold the video.
+	At this point we can retrieve its handler (which has a different meaning depending on the windowing system)
+	and pass it to GStreamer through the XOverlay interface.
+*/
+void setVideoWindow_event(GtkWidget *widget) 
+{
+	GdkWindow *mainWindow = gtk_widget_get_window(widget);
+	guintptr window_handle;
+	
+	if (!gdk_window_ensure_native(mainWindow))
+	{
+		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
+	}	
+
+	// Retrieve mainWindow handler from GDK
+	window_handle = (guintptr)GDK_WINDOW_HWND(mainWindow);
+
+	// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
+	gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
+}
 
 
 //Saves the current bandwidth to resource.txt (for the clientside)
@@ -71,12 +95,12 @@ void updateOptions(GtkWidget *widget, gpointer data){
 
 	if(retval == CONNECTION_ERROR){
 		//report connection error or server resource error
-		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "connection error or server resource error"
-                                             )));
+		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
+			GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_ERROR,
+			GTK_BUTTONS_NONE,
+			"connection error or server resource error"
+		)));
 	}else if(retval == RESOURCES_ERROR){
 		//report client side error
 		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
@@ -105,35 +129,30 @@ void updateResolution(GtkWidget * widget, gpointer data){
 }
 
 void playVideo(GtkWidget *widget,  gpointer data){
-	
+	GstClient::setPipelineToRun(&gstData);
 	if(started == 0){
 		//send start
 		int retval = startStream(&settingsData);
 
 		if(retval == 0){
 			started=1;
-
-			gstData.mode = Active;
-			GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
-			GstClient::buildPipeline(&gstData);
-			GstClient::setPipelineToRun(&gstData);
-			GstClient::waitForEosOrError(&gstData);
+			
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
-			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "Connection error or server resource error"
-                                             )));
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
+				GTK_DIALOG_DESTROY_WITH_PARENT ,
+				GTK_MESSAGE_ERROR,
+				GTK_BUTTONS_NONE,
+				"Connection error or server resource error"
+				)));
 		}else{
 			//report client side error
-			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "There was a client-side error."
-                                             )));
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
+                GTK_DIALOG_DESTROY_WITH_PARENT ,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_NONE,
+                "There was a client-side error."
+                )));
 		}
 	}
 	else{
@@ -143,20 +162,28 @@ void playVideo(GtkWidget *widget,  gpointer data){
 }
 
 void pauseVideo(GtkWidget *widget,  gpointer data){
+	printf("clicked PAUSE stream\n");
 	pauseStream();
+	GstClient::pausePipeline(&gstData);
 }
 
 void fastForwardVideo(GtkWidget *widget,  gpointer data){
+	printf("clicked FAST FORWARD video\n");
 	fastforwardStream();
+	GstClient::fastForwardVideo(&gstData);
 }
 
 void rewindVideo(GtkWidget *widget,  gpointer data){
+	printf("clicked REWIND video\n");
 	rewindStream();
+	GstClient::rewindVideo(&gstData);
 }
 
 void stopVideo(GtkWidget *widget, gpointer data){
+	printf("clicked STOP stream\n");
 	started=0;
 	stopStream();
+	GstClient::stopAndFreeResources(&gstData);
 }
 
 void updateBandwidth(GtkWidget *widget, gpointer data){
@@ -282,9 +309,8 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	videoWindow = gtk_drawing_area_new();
 	gtk_widget_set_double_buffered(videoWindow, FALSE);
-	//g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), videoData);
-	//videoData->window = videoWindow;
-	
+	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
+
 	// Set up options
 	videoMode_option = gtk_combo_box_new_text();
 	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option), "PASSIVE");
@@ -359,7 +385,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
     
 	gtk_widget_show_all (mainWindow);
 	//GTK_DIALOG_DESTROY_WITH_PARENT
-	
+	gtk_widget_realize(videoWindow);
 }
 
 /*
@@ -373,6 +399,11 @@ int main(int argc, char* argv[])
 	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
+	connect(&settingsData);
+
+	gstData.mode = Active;
+	GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
+	GstClient::buildPipeline(&gstData);
 
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);

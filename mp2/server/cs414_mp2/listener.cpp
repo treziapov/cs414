@@ -184,6 +184,7 @@ void init_listener(int totalBandwidth){
 			data->audioPort = audioPort;
 			data->gstData = &currentClient->gstData;
 			data->gstData->clientIp = strdup(clientIp);
+			data->client = currentClient;
 
 			//Send accept signal
 			int signal = ACCEPT;
@@ -264,28 +265,34 @@ void handleConnection(void * ptr){
 	GstServer::initPipeline(data->gstData, data->videoPort, data->audioPort);
 	GstServer::buildPipeline(data->gstData);
 	GstServer::setPipelineToRun(data->gstData);
-	GstServer::waitForEosOrError(data->gstData);
+	//GstServer::waitForEosOrError(data->gstData);
 
 	bool endStream = false;
-	while(endStream == false){
-		int buffer[2]; //0 - Port Number of Client, 1 - Signal
-		recv(ClientSocket, (char *)buffer, 2 * sizeof(int), 0);
+	while(endStream == false) {
+		int signal;
+		recv(ClientSocket, (char*)&signal, sizeof(int), 0);
 
-		if(buffer[1] == STOP){
-			//Call function to stop the stream
+		if (signal != 0) {
+			printf("client signal: %d\n", signal);
+		}
 
-			removeClient(buffer[0]);
-
+		if (signal == PLAY) {
+			printf("got PLAY message\n");
+			GstServer::playPipeline(data->gstData);
+		}else if(signal == STOP){
+			printf("got STOP message\n");
+			GstServer::stopPipeline(data->gstData);
+			removeClient(data->client->port);
 			endStream = true;
-		}else if(buffer[1] == PAUSE){
-			//Call pause function
-		}else if(buffer[1] == RESUME){
+		}else if(signal == PAUSE){
+			printf("got PAUSE message\n");
+			GstServer::pausePipeline(data->gstData);
+		}else if(signal == RESUME){
+			printf("got RESUME message\n");
+			GstServer::playPipeline(data->gstData);
 			//Call resume function
-		}else if(buffer[1] == REWIND){
-			//Call rewind function
-		}else if(buffer[1] == FAST_FORWARD){
-			//Call fast forward function
-		}else if(buffer[1] == SWITCH_MODE){
+		}else if(signal == SWITCH_MODE){
+			printf("got SWITCH MODE message\n");
 			//Call function to switch modes
 
 			int newBandwidth;
@@ -307,7 +314,7 @@ void handleConnection(void * ptr){
 				endStream = false;
 			}
 
-		}else if(buffer[1] == NEW_RESOURCES){
+		}else if(signal == NEW_RESOURCES){
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 
