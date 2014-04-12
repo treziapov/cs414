@@ -6,7 +6,7 @@
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
 	FILE * myFile;
-	myFile = fopen("C:/server_resource.txt", "r");
+	myFile = fopen("server_resource.txt", "r");
 
 	fseek(myFile, 0, SEEK_END);
 	long fileSize = ftell(myFile);
@@ -26,15 +26,11 @@ void saveBandwidth(int bandwidth){
 	FILE * myFile;
 	myFile = fopen("resource.txt", "w+");
 
-	fprintf(myFile, "%d", bandwidth);
-
 	fclose(myFile);
 }
 
 int main(int argc, char *argv[]){
 	int bandwidth = getBandwidth();
-
-	printf("%d\n", bandwidth);
 
 	init_listener(bandwidth);
 }

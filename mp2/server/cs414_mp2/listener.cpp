@@ -19,9 +19,65 @@
 
 Resources resource;
 
+void addClient(Client newClient){
+	resource.numClients++;
+
+	Client * newArray = new Client[resource.numClients];
+
+	for(int i = 0; i < resource.numClients - 1; i++){
+		newArray[i] = resource.clients[i];
+	}
+
+	newArray[resource.numClients - 1] = newClient;
+
+	if(resource.clients != NULL){
+		delete[] resource.clients;
+	}
+	resource.clients = newArray;
+}
+
+void removeClient(int port){
+	Client * newArray = new Client[resource.numClients - 1];
+
+	int j = 0;
+	for(int i = 0; i < resource.numClients; i++){
+		if(i != j || resource.clients[i].port != port){
+			newArray[j] = resource.clients[i];
+
+			j++;
+		}else{
+			resource.remainingBandwidth += resource.clients[i].bandwidth;
+		}
+	}
+
+	if(resource.clients != NULL){
+		delete[] resource.clients;
+	}
+	resource.clients = newArray;
+}
+
+int findClientBandwidth(int port){
+	for(int i = 0; i < resource.numClients; i++){
+		if(resource.clients[i].port == port){
+			return resource.clients[i].bandwidth;
+		}
+	}
+}
+
+void updateClientBandwidth(int port, int newBandwidth){
+	for(int i = 0; i < resource.numClients; i++){
+		if(resource.clients[i].port == port){
+			resource.clients[i].bandwidth = newBandwidth;
+			return;
+		}
+	}
+}
+
 void init_listener(int totalBandwidth){
 	resource.totalBandwidth = totalBandwidth;
 	resource.remainingBandwidth = totalBandwidth;
+	resource.clients = NULL;
+	resource.numClients = 0;
 
 	WSADATA wsaData;
 	int iResult;
@@ -38,7 +94,7 @@ void init_listener(int totalBandwidth){
 		return;
 	}
 
-	ZeroMemory(&hints, sizeof(hints));
+	memset(&hints, 0x00, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
@@ -104,6 +160,8 @@ void init_listener(int totalBandwidth){
 			data->resolution = newRequest.resolution;
 			data->rate = newRequest.rate;
 			data->port = currentPort;
+			data->videoPort = videoPort;
+			data->audioPort = audioPort;
 
 			//Send accept signal
 			int signal = ACCEPT;
@@ -136,28 +194,28 @@ void init_listener(int totalBandwidth){
 
 int calculateResources(Resources rsc, Request req){
 	int audioBitRate = 0;
-		if(req.mode == ACTIVE){
-			audioBitRate = 8000 * 16;
-		}
+	if(req.mode == ACTIVE){
+		audioBitRate = 8000 * 16;
+	}
 
-		int bitsPerPixel = 24;
+	int bitsPerPixel = 24;
 
-		int videoPixelNumber = 0;
-		if(req.resolution == R240){
-			videoPixelNumber = 320 * 240;
-		}else{
-			videoPixelNumber = 640 * 480;
-		}
+	int videoPixelNumber = 0;
+	if(req.resolution == R240){
+		videoPixelNumber = 320 * 240;
+	}else{
+		videoPixelNumber = 640 * 480;
+	}
 
-		int videoRate = req.rate;
+	int videoRate = req.rate;
 
-		int clientBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
+	int clientBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
 
-		if(rsc.remainingBandwidth - clientBandwidth < 0){
-			return -1;
-		}
+	if(rsc.remainingBandwidth - clientBandwidth < 0){
+		return -1;
+	}
 
-		return clientBandwidth;
+	return clientBandwidth;
 }
 
 void createClient(Resources & resource, int clientBandwidth, int clientPort){
@@ -165,7 +223,7 @@ void createClient(Resources & resource, int clientBandwidth, int clientPort){
 	newClient.bandwidth = clientBandwidth;
 	newClient.port = clientPort;
 
-	//resource.clients.push_back(newClient);
+	addClient(newClient);
 	resource.remainingBandwidth -= clientBandwidth;
 }
 
@@ -189,12 +247,7 @@ void handleConnection(void * ptr){
 			//Call function to stop the stream
 
 
-			/*for(int i = 0; i < (int)resource.clients.size(); i++){
-				if(resource.clients[i].port == buffer[0]){
-					resource.remainingBandwidth += resource.clients[i].bandwidth;
-					resource.clients.erase(resource.clients.begin() + i);
-				}
-			}*/
+			removeClient(buffer[0]);
 
 			endStream = true;
 		}else if(buffer[1] == PAUSE){
@@ -207,8 +260,45 @@ void handleConnection(void * ptr){
 			//Call fast forward function
 		}else if(buffer[1] == SWITCH_MODE){
 			//Call function to switch modes
+
+			int newBandwidth;
+			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
+
+			int oldBandwidth = findClientBandwidth(port);
+			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
+				int signal = ACCEPT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+
+				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
+
+				updateClientBandwidth(port, newBandwidth);
+			}else{
+				int signal = REJECT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+
+				removeClient(port);
+				endStream = false;
+			}
+
 		}else if(buffer[1] == NEW_RESOURCES){
-			
+			int newBandwidth;
+			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
+
+			int oldBandwidth = findClientBandwidth(port);
+			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
+				int signal = ACCEPT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+
+				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
+
+				updateClientBandwidth(port, newBandwidth);
+			}else{
+				int signal = REJECT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+
+				removeClient(port);
+				endStream = false;
+			}
 		}
 	}
 

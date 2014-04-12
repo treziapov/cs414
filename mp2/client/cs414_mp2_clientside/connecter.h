@@ -48,6 +48,8 @@ void rewindStream();
 
 void fastforwardStream();
 
-void switchMode();
+int calculateBandwidth(Settings * settingsData);
+
+int switchMode(Settings * settingsData);
 
 int changeResources(Settings * settingsData);

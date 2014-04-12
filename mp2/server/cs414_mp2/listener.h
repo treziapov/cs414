@@ -31,6 +31,7 @@ typedef struct Resources{
 	int totalBandwidth;
 	int remainingBandwidth;
 	Client * clients;
+	int numClients;
 } Resources;
 
 typedef struct Request{
@@ -41,6 +42,8 @@ typedef struct Request{
 
 typedef struct ThreadData{
 	int port;
+	int videoPort;
+	int audioPort;
 	int resolution;
 	int mode;
 	int rate;

@@ -61,6 +61,14 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		settingsData->rate = 15;
 		settingsData->mode = ACTIVE;
 	}
+
+	int retval = switchMode(settingsData);
+
+	if(retval == CONNECTION_ERROR){
+		//report connection error or server resource error
+	}else if(retval == RESOURCES_ERROR){
+		//report client side error
+	}
 }
 
 void updateResolution(GtkWidget * widget, gpointer data){

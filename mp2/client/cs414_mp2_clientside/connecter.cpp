@@ -156,9 +156,54 @@ void fastforwardStream(){
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 }
 
-void switchMode(){
-	int signal = SWITCH_MODE;
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+int calculateBandwidth(Settings * settingsData){
+	int audioBitRate = 0;
+	if(settingsData->mode == ACTIVE){
+		audioBitRate = 8000 * 16;
+	}
+
+	int bitsPerPixel = 24;
+
+	int videoPixelNumber = 0;
+	if(settingsData->resolution == R240){
+		videoPixelNumber = 320 * 240;
+	}else{
+		videoPixelNumber = 640 * 480;
+	}
+
+	int videoRate = settingsData->rate;
+
+	int clientBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
+
+	return clientBandwidth;
+}
+
+int switchMode(Settings * settingsData){
+	//Check if we have enough bandwidth for the stream
+	if(isEnoughBandwidth(settingsData)){
+		//Check if the server has enough bandwidth for the stream
+		int signal = SWITCH_MODE;
+		send(ServerSocket, (char *)&signal, sizeof(int), 0);
+		int newBandwidth = calculateBandwidth(settingsData);
+		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
+
+		recv(ServerSocket, (char *)&signal, sizeof(int), 0);
+
+		if(signal == ACCEPT){
+			//The server has enough bandwidth, continue streaming
+			return 0;
+		}else{
+			//The server does not have enough bandwidth, stop streaming
+			stopStream();
+
+			return CONNECTION_ERROR;
+		}
+	}else{
+		//You do not have enough bandwidth, stop streaming
+		stopStream();
+
+		return RESOURCES_ERROR;
+	}
 }
 
 int changeResources(Settings * settingsData){
@@ -167,7 +212,8 @@ int changeResources(Settings * settingsData){
 		//Check if the server has enough bandwidth for the stream
 		int signal = NEW_RESOURCES;
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
-		send(ServerSocket, (char *)&settingsData->bandwidth, sizeof(int), 0);
+		int newBandwidth = calculateBandwidth(settingsData);
+		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
 
 		recv(ServerSocket, (char *)&signal, sizeof(int), 0);
 
