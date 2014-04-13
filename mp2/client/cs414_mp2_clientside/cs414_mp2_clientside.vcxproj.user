@@ -3,10 +3,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerWorkingDirectory>$(GSTREAMER_SDK_ROOT_X86)\bin</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-<<<<<<< HEAD
     <LocalDebuggerCommandArguments>192.17.193.101 192.17.207.41</LocalDebuggerCommandArguments>
-=======
-    <LocalDebuggerCommandArguments>localhost</LocalDebuggerCommandArguments>
->>>>>>> 4d9422bf340bba5d01cf39d52981832c9c5e414c
   </PropertyGroup>
 </Project>
