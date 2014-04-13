@@ -455,6 +455,10 @@ int main(int argc, char* argv[])
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
 	gstData.mode = ACTIVE;
+	gstData.serverIp = argv[1];
+	gstData.clientIp = argv[2];
+
+	printf ("Server on '%s', client on '%s'.\n", argv[1], argv[2]);
 
 	sinkData.videoTSD = 0;
 	sinkData.audioTSD = 0;
@@ -465,7 +469,7 @@ int main(int argc, char* argv[])
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
 
-	//gstData.mode = Passive;
+	//gstData.mode = Active;
 	//GstClient::initPipeline(&gstData, 5000, 5001, &sinkData);
 	//GstClient::buildPipeline(&gstData);
 	//GstClient::playPipeline(&gstData);

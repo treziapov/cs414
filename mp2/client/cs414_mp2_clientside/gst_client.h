@@ -15,6 +15,7 @@ class GstData {
 public:
 	int mode;
 	gdouble playbackRate;
+	gchar *serverIp, *clientIp;
 
 	GstElement *pipeline;
 	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink, *videoQueue;

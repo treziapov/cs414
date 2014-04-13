@@ -35,6 +35,7 @@ void connect(Settings * settingsData){
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
+	printf ("Trying to connect to %s:%d.\n", settingsData->ip, 6000);
 	iResult = getaddrinfo(settingsData->ip, "6000", &hints, &result);
 
 	for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){

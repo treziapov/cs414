@@ -111,17 +111,20 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	data->jitterBuffer = gst_element_factory_make("gstrtpjitterbuffer", "jitterBuffer");
 	data->pipeline = gst_pipeline_new ("streaming_client_pipeline");
 
-	char videoUri[32], audioUri[32];
-	sprintf (videoUri, "udp://localhost:%d", videoPort);
-	sprintf (audioUri, "udp://localhost:%d", audioPort);
-	g_object_set (data->videoUdpSource, "uri", videoUri, "caps", data->videoUdpCaps, NULL);
-	g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
+	//char videoUri[32], audioUri[32];
+	//sprintf (videoUri, "udp://%s:%d", data->clientIp, videoPort);
+	//sprintf (audioUri, "udp://%s:%d", data->clientIp, audioPort);
+	//g_object_set (data->videoUdpSource, "uri", videoUri, "caps", data->videoUdpCaps, NULL);
+	//g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
+	g_object_set (data->videoUdpSource, "port", videoPort, NULL);
+	g_object_set (data->audioUdpSource, "port", audioPort, NULL);
 	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
 
 	GstPad * appsrcPad = gst_element_get_static_pad(GST_ELEMENT(data->jitterBuffer), "src");
 	gst_pad_set_event_function(appsrcPad, (GstPadEventFunction)jitterEventHandler);
 
-	printf("Streaming video from port %d and audio from port %d\n", videoPort, audioPort);
+	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
+		data->clientIp, videoPort, audioPort);
 
 	if (!data->pipeline ||
 		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || !data->videoDecoder || !data->videoSink || !data->videoQueue || !data->videoAppSink || !data->videoAppQueue || !data->videoDecQueue || !data->videoDecAppQueue ||
