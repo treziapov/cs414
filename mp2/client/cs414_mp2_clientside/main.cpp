@@ -15,12 +15,14 @@ GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
 GtkWidget *current_bandwidth;
 GtkWidget *current_rate;
+GtkWidget *sync, *ping, *failures;
 
 Mode mode;
 bool started = 0;
 bool active = true;
 Settings settingsData;
 GstData gstData;
+SinkData sinkData;
 
 /* 
 	This function is called when the GUI toolkit creates the physical mainWindow that will hold the video.
@@ -278,6 +280,23 @@ void updateVideo(GtkWidget *widget, gpointer data){
 		}
 	}
 }
+
+gboolean refreshText(void * ptr){
+	char buffer[512];
+	if(active){
+		GstClockTime skew = abs(sinkData.videoTSD - sinkData.audioTSD);
+		sprintf(buffer, "Current skew: %dms", skew);
+		gtk_label_set_text(GTK_LABEL(sync), buffer);
+	}
+	sprintf(buffer, "Current end to end delay: %dms", sinkData.ping);
+	gtk_label_set_text(GTK_LABEL(ping), buffer);
+	float ratio = (sinkData.failures / (float)(sinkData.failures + sinkData.successes)) * 100;
+	sprintf(buffer, "Total packets lost: %f%%", ratio);
+	gtk_label_set_text(GTK_LABEL(failures), buffer);
+
+	return (gboolean)true;
+}
+
 /* 
 	Set up initial UI 
 */
@@ -304,6 +323,9 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	GtkWidget *video_label = gtk_label_new("Video:");
 	current_bandwidth = gtk_label_new(stringHead);
 	current_rate = gtk_label_new("Current Rate: 15");
+	sync = gtk_label_new("Current synchronization skew: 0ms");
+	ping = gtk_label_new("Current end to end delay: 0ms");
+	failures = gtk_label_new("Packets lost: 0");
 	
 	gtk_init(&argc, &argv);
    
@@ -375,6 +397,9 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (options), updateVideo_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (options), current_bandwidth, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), current_rate, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), sync, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), ping, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), failures, FALSE, FALSE, 1);
 
 	mainHBox = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (mainHBox), videoWindow, TRUE, TRUE, 0);
@@ -389,6 +414,8 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_widget_show_all (mainWindow);
 	//GTK_DIALOG_DESTROY_WITH_PARENT
 	gtk_widget_realize(videoWindow);
+
+	g_timeout_add(500, refreshText, NULL);
 }
 
 /*
@@ -402,10 +429,17 @@ int main(int argc, char* argv[])
 	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
+
+	sinkData.videoTSD = 0;
+	sinkData.audioTSD = 0;
+	sinkData.ping = 0;
+	sinkData.failures = 0;
+	sinkData.successes = 1;
+
 	connect(&settingsData);
 
-	gstData.mode = Active;
-	GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
+	gstData.mode = ACTIVE;
+	GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
 	GstClient::buildPipeline(&gstData);
 
     gtk_init(&argc, &argv);
