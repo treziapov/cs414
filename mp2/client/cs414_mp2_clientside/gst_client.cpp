@@ -61,8 +61,9 @@ static void newBuffer (GstElement *sink, GstData *data) {
 }
 void GstClient::buildPipeline(GstData *data) {
 	if (data->mode == PASSIVE) {
+		printf("passive\n");
 		gst_bin_add_many (GST_BIN (data->pipeline), 
-			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder,data-> videoSink, NULL);
+			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder,data-> videoSink, NULL);
 		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
 			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
 		}	
