@@ -12,6 +12,7 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	data->videoUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
 	data->videoRtpDepay = gst_element_factory_make ("rtpjpegdepay", "videoRtpDepay");
 	data->videoDecoder = gst_element_factory_make ("ffdec_mjpeg", "videoDecoder");
+<<<<<<< HEAD
 	data->videoSink = gst_element_factory_make ("autovideosink", "videoSink");
 	/*data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
 	data->videoTee = gst_element_factory_make("tee", "videoTee");
@@ -19,6 +20,10 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	data->videoAppQueue = gst_element_factory_make("queue", "videoAppQueue");
 	data->videoDecQueue = gst_element_factory_make("queue", "videoDecQueue");
 	data->videoDecAppQueue = gst_element_factory_make("queue", "videoDecAppQueue");*/
+=======
+	data->videoSink = gst_element_factory_make ("d3dvideosink", "videoSink");
+	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
+>>>>>>> 4d1aeb1c7faa4500b5c36ccd7e063a3a10c605a1
 	
 	data->audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
 	data->audioUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
@@ -266,4 +271,68 @@ void GstClient::waitForEosOrError(void *voidData) {
 void GstClient::stopAndFreeResources(GstData *data) {
 	gst_element_set_state (data->pipeline, GST_STATE_NULL);
 	gst_object_unref (data->pipeline);
+}
+
+/*
+	Send a seek event for navigating the video content
+	i.e. fast-forwarding, rewinding
+*/
+void sendSeekEvent(GstData *data) {
+	gint64 position;
+	GstFormat format = GST_FORMAT_TIME;
+	GstEvent *seek_event;
+   
+	// Obtain the current position, needed for the seek event
+	if (!gst_element_query_position (data->pipeline, &format, &position)) {
+		g_printerr ("Unable to retrieve current position.\n");
+		return;
+	}
+  
+	// Create the seek event
+	if (data->playbackRate > 0) {
+		seek_event = gst_event_new_seek (data->playbackRate, GST_FORMAT_TIME, GstSeekFlags(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
+			GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
+	} 
+	else {
+		seek_event = gst_event_new_seek (data->playbackRate, GST_FORMAT_TIME, GstSeekFlags(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
+			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_SET, position);
+	}
+
+	// Send the event
+	gst_element_send_event (data->videoSink, seek_event);
+	g_print ("Current playbackRate: %g\n", data->playbackRate);
+}
+
+void GstClient::playPipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
+}
+
+void GstClient::pausePipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_PAUSED);
+}
+
+void GstClient::stopPipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_READY);
+}
+
+void GstClient::rewindVideo(GstData *data) {
+	if (data->playbackRate > 0) {
+		data->playbackRate = -1.0;
+	}
+	else {
+		data->playbackRate *= 2.0;
+	}
+	sendSeekEvent(data);
+	setPipelineToRun(data);
+}
+
+void GstClient::fastForwardVideo(GstData *data) {
+	if (data->playbackRate < 0) {
+		data->playbackRate = 1.0;
+	}
+	else {
+		data->playbackRate *= 2.0;
+	}
+	sendSeekEvent(data);
+	setPipelineToRun(data);
 }

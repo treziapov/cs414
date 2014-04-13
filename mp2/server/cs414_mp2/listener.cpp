@@ -190,6 +190,7 @@ void init_listener(int totalBandwidth){
 			data->audioPort = audioPort;
 			data->gstData = &currentClient->gstData;
 			data->gstData->clientIp = strdup(clientIp);
+			data->client = currentClient;
 
 			//Send accept signal
 			int signal = ACCEPT;
@@ -296,28 +297,37 @@ void handleConnection(void * ptr){
 	GstServer::buildPipeline(data->gstData, streamMode);
 	GstServer::setPipelineToRun(data->gstData);
 	_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
-	
+
 	bool endStream = false;
-	while(endStream == false){
-		int buffer[2]; //0 - Port Number of Client, 1 - Signal
-		recv(ClientSocket, (char *)buffer, sizeof(int), 0);
-		recv(ClientSocket, (char *)&buffer[1], sizeof(int), 0);
-		
-		if(buffer[1] == STOP){
+	while(endStream == false) {
+		int signal;
+		recv(ClientSocket, (char*)&signal, sizeof(int), 0);
+		//int buffer[2]; //0 - Port Number of Client, 1 - Signal
+		//recv(ClientSocket, (char *)buffer, sizeof(int), 0);
+		//recv(ClientSocket, (char *)&buffer[1], sizeof(int), 0);
+
+		if (signal != 0) {
+			printf("client signal: %d\n", signal);
+		}
+
+		if (signal == PLAY) {
+			printf("got PLAY message\n");
+			GstServer::playPipeline(data->gstData);
+		}else if(signal == STOP){
+			printf("got STOP message\n");
+			GstServer::stopPipeline(data->gstData);
+			removeClient(data->client->port);
 			endStream = true;
-		}else if(buffer[1] == PAUSE){
-			//Call pause function
-			fprintf(stderr, "pause\n");
-		}else if(buffer[1] == RESUME){
+		}else if(signal == PAUSE){
+			printf("got PAUSE message\n");
+			GstServer::pausePipeline(data->gstData);
+		}else if(signal == RESUME){
+			printf("got RESUME message\n");
+			GstServer::playPipeline(data->gstData);
 			//Call resume function
-			fprintf(stderr, "resume\n");
-		}else if(buffer[1] == REWIND){
-			//Call rewind function
-			fprintf(stderr, "rewind\n");
-		}else if(buffer[1] == FAST_FORWARD){
-			//Call fast forward function
-			fprintf(stderr, "fast forward\n");
-		}else if(buffer[1] == SWITCH_MODE){
+		}else if(signal == SWITCH_MODE){
+			printf("got SWITCH MODE message\n");
+			//Call function to switch modes
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 
@@ -338,7 +348,7 @@ void handleConnection(void * ptr){
 				endStream = false;
 			}
 
-		}else if(buffer[1] == NEW_RESOURCES){
+		}else if(signal == NEW_RESOURCES){
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 

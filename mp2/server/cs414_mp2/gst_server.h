@@ -10,6 +10,11 @@ class GstData {
 		GstElement *videoSource, *videoEncoder, *videoRtpPay, *videoUdpSink;
 		GstElement *audioSource, *audioEncoder, *audioRtpPay, *audioUdpSink;
 
+		GstData() {
+			mode = Active;
+			clientIp = "localhost";
+		};
+
 		~GstData() {
 			delete clientIp;
 		};
@@ -25,4 +30,8 @@ class GstServer {
 		static void setPipelineToRun(GstData *data);
 		static void waitForEosOrError(void *data);
 		static void stopAndFreeResources(GstData *data);
+
+		static void playPipeline(GstData *data);
+		static void stopPipeline(GstData *data);
+		static void pausePipeline(GstData *data);
 };

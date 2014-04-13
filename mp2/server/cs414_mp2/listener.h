@@ -23,6 +23,7 @@
 #define FAST_FORWARD 5
 #define SWITCH_MODE 6
 #define NEW_RESOURCES 7
+#define PLAY 8
 
 typedef struct Client{
 	int bandwidth;
@@ -51,6 +52,7 @@ typedef struct ThreadData{
 	int mode;
 	int rate;
 	SOCKET ClientSocket;
+	Client *client;
 	GstData *gstData;
 } ThreadData;
 

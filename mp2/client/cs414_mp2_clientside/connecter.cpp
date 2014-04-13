@@ -18,6 +18,10 @@ SOCKET ServerSocket;
 WSADATA wsaData;
 int messagePort;
 
+void sendServerSignal(int signal) {
+	send(ServerSocket, (char*)&signal, sizeof(int), 0); 
+}
+
 void connect(Settings * settingsData){
 	SOCKET ConnectSocket = INVALID_SOCKET;
 	ServerSocket = INVALID_SOCKET;
@@ -102,58 +106,73 @@ bool isEnoughBandwidth(Settings * settingsData){
 }
 
 int startStream(Settings * settingsData){
-	if(isEnoughBandwidth(settingsData)){
-		connect(settingsData);
-		
-		if(ServerSocket == SOCKET_ERROR){
-			ServerSocket = INVALID_SOCKET;
-			return CONNECTION_ERROR;
-		}
-	}else{
-		return RESOURCES_ERROR;
-	}
-
+	//if(ServerSocket != INVALID_SOCKET){
+	//	if(isEnoughBandwidth(settingsData)){
+	//		connect(settingsData);
+	//		
+	//		if(ServerSocket == SOCKET_ERROR){
+	//			ServerSocket = INVALID_SOCKET;
+	//			return CONNECTION_ERROR;
+	//		}else{
+	//		}
+	//	}else{
+	//		return RESOURCES_ERROR;
+	//	}
+	//}
+	sendServerSignal(PLAY);
 	return 0;
 }
 
 void stopStream(){
-	int signal = STOP;
-	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-
+	//send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+	sendServerSignal(STOP);
 	closesocket(ServerSocket);
 	ServerSocket = INVALID_SOCKET;
-
 	WSACleanup();
 }
 
 void pauseStream(){
-	fprintf(stderr, "pause\n");
-	int signal = PAUSE;
-	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(PAUSE);
 }
 
 void resumeStream(){
-	fprintf(stderr, "resume\n");
-	int signal = RESUME;
-	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(RESUME);
 }
 
 void rewindStream(){
-	fprintf(stderr, "rewind\n");
-	int signal = REWIND;
-	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(REWIND);
 }
 
 void fastforwardStream(){
-	fprintf(stderr, "fast forward\n");
-	int signal = FAST_FORWARD;
-	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+	sendServerSignal(FAST_FORWARD);
 }
+
+//	fprintf(stderr, "pause\n");
+//	int signal = PAUSE;
+//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+//}
+//
+//void resumeStream(){
+//	fprintf(stderr, "resume\n");
+//	int signal = RESUME;
+//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+//}
+//
+//void rewindStream(){
+//	fprintf(stderr, "rewind\n");
+//	int signal = REWIND;
+//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+//}
+//
+//void fastforwardStream(){
+//	fprintf(stderr, "fast forward\n");
+//	int signal = FAST_FORWARD;
+//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+//}
 
 int calculateBandwidth(Settings * settingsData){
 	int audioBitRate = 0;
@@ -171,9 +190,7 @@ int calculateBandwidth(Settings * settingsData){
 	}
 
 	int videoRate = settingsData->rate;
-
 	int clientBandwidth = audioBitRate + bitsPerPixel * videoPixelNumber * videoRate;
-
 	return clientBandwidth;
 }
 

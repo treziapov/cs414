@@ -119,3 +119,15 @@ void GstServer::stopAndFreeResources(GstData *data) {
 	gst_element_set_state (data->pipeline, GST_STATE_NULL);
 	gst_object_unref (data->pipeline);
 }
+
+void GstServer::playPipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
+}
+
+void GstServer::pausePipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_PAUSED);
+}
+
+void GstServer::stopPipeline(GstData *data) {
+	gst_element_set_state(data->pipeline, GST_STATE_READY);
+}
