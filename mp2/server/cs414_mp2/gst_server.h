@@ -21,8 +21,8 @@ class GstServer {
 		static const gint AUDIO_PORT = 5001;
 
 		static void initPipeline(GstData *data, int videoPort, int audioPort);
-		static void buildPipeline(GstData *data);
+		static void buildPipeline(GstData *data, int streamMode);
 		static void setPipelineToRun(GstData *data);
-		static void waitForEosOrError(GstData *data);
+		static void waitForEosOrError(void *data);
 		static void stopAndFreeResources(GstData *data);
 };

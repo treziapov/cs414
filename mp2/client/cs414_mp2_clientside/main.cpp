@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <process.h>
 
 #include "connecter.h"
 #include "gst_client.h"
@@ -67,24 +68,26 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		settingsData.mode = Active;
 	}
 
-	int retval = switchMode(&settingsData);
+	if(started != 0){
+		int retval = switchMode(&settingsData);
 
-	if(retval == CONNECTION_ERROR){
-		//report connection error or server resource error
-		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "connection error or server resource error"
-                                             )));
-	}else if(retval == RESOURCES_ERROR){
-		//report client side error
-		gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
-                                             GTK_DIALOG_DESTROY_WITH_PARENT ,
-                                             GTK_MESSAGE_ERROR,
-                                             GTK_BUTTONS_NONE,
-                                             "client side error"
-                                             )));
+		if(retval == CONNECTION_ERROR){
+			//report connection error or server resource error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+				                                 GTK_DIALOG_DESTROY_WITH_PARENT ,
+				                                 GTK_MESSAGE_ERROR,
+				                                 GTK_BUTTONS_NONE,
+				                                 "connection error or server resource error"
+				                                 )));
+		}else if(retval == RESOURCES_ERROR){
+			//report client side error
+			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
+				                                 GTK_DIALOG_DESTROY_WITH_PARENT ,
+				                                 GTK_MESSAGE_ERROR,
+				                                 GTK_BUTTONS_NONE,
+				                                 "client side error"
+				                                 )));
+		}
 	}
 }
 
@@ -117,7 +120,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
 			GstClient::buildPipeline(&gstData);
 			GstClient::setPipelineToRun(&gstData);
-			GstClient::waitForEosOrError(&gstData);
+			_beginthread(GstClient::waitForEosOrError, 0, &gstData);
 		}else if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),

@@ -16,6 +16,7 @@
 
 SOCKET ServerSocket;
 WSADATA wsaData;
+int messagePort;
 
 void connect(Settings * settingsData){
 	SOCKET ConnectSocket = INVALID_SOCKET;
@@ -53,6 +54,7 @@ void connect(Settings * settingsData){
 		recv(ConnectSocket, (char *)&settingsData->messagePort, sizeof(int), 0);
 		recv(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
 		recv(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
+		messagePort = settingsData->messagePort;
 		
 		char buffer[512];
 		iResult = getaddrinfo(settingsData->ip, itoa(settingsData->messagePort, buffer, 10), &hints, &result);
@@ -62,6 +64,8 @@ void connect(Settings * settingsData){
 			newConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
 			iResult = connect(newConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+			signal = 1;
+			send(newConnectSocket, (char *)&signal, sizeof(int), 0);
 			if(iResult != SOCKET_ERROR){
 				break;
 			}
@@ -110,7 +114,6 @@ int startStream(Settings * settingsData){
 			if(ServerSocket == SOCKET_ERROR){
 				ServerSocket = INVALID_SOCKET;
 				return CONNECTION_ERROR;
-			}else{
 			}
 		}else{
 			return RESOURCES_ERROR;
@@ -122,6 +125,7 @@ int startStream(Settings * settingsData){
 
 void stopStream(){
 	int signal = STOP;
+	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 
 	closesocket(ServerSocket);
@@ -131,22 +135,33 @@ void stopStream(){
 }
 
 void pauseStream(){
+	fprintf(stderr, "pause\n");
 	int signal = PAUSE;
+	int bytes = send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
+
+	
+	fprintf(stderr, "error: %d\n", WSAGetLastError());
 }
 
 void resumeStream(){
+	fprintf(stderr, "resume\n");
 	int signal = RESUME;
+	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 }
 
 void rewindStream(){
+	fprintf(stderr, "rewind\n");
 	int signal = REWIND;
+	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 }
 
 void fastforwardStream(){
+	fprintf(stderr, "fast forward\n");
 	int signal = FAST_FORWARD;
+	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
 }
 
@@ -177,7 +192,9 @@ int switchMode(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = SWITCH_MODE;
+		send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
+
 		int newBandwidth = calculateBandwidth(settingsData);
 		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
 
@@ -205,7 +222,9 @@ int changeResources(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = NEW_RESOURCES;
+		send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
+
 		int newBandwidth = calculateBandwidth(settingsData);
 		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
 

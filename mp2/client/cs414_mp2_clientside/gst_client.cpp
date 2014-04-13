@@ -1,3 +1,8 @@
+#define ACTIVE 1
+#define PASSIVE 2
+
+#include <process.h>
+
 #include "gst_client.h"
 
 void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
@@ -55,7 +60,7 @@ static void newBuffer (GstElement *sink, GstData *data) {
   }
 }
 void GstClient::buildPipeline(GstData *data) {
-	if (data->mode == Passive) {
+	if (data->mode == PASSIVE) {
 		gst_bin_add_many (GST_BIN (data->pipeline), 
 			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder,data-> videoSink, NULL);
 		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
@@ -71,13 +76,16 @@ void GstClient::buildPipeline(GstData *data) {
 			g_printerr("Couldn't link: videoDecoder - videoSink.\n");
 		}
 	}
-	else if (data->mode == Active) {
+	else if (data->mode == ACTIVE) {
 		gst_bin_add_many (GST_BIN (data->pipeline),
-			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder, data->videoSink, 
+			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder, data->videoSink, 
 			data->audioUdpSource, data->audioRtpDepay, data->audioDecoder, data->audioSink, NULL);
-		if (!gst_element_link (data->videoUdpSource, data->videoRtpDepay)) {
-			g_printerr("Couldn't link: videoUdpSource - videoRtpDepay.\n");
-		}	
+		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
+			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
+		}
+		if (!gst_element_link (data->jitterBuffer, data->videoRtpDepay)) {
+			g_printerr("Couldn't link: jitterBuffer - videoRtpDepay.\n");
+		}
 		if (!gst_element_link (data->videoRtpDepay, data->videoDecoder)) {
 			g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
 		}
@@ -107,7 +115,8 @@ void GstClient::setPipelineToRun(GstData *data) {
 	}
 }
 
-void GstClient::waitForEosOrError(GstData *data) {
+void GstClient::waitForEosOrError(void *voidData) {
+	GstData * data = (GstData *)voidData;
 	GstBus *bus = gst_element_get_bus (data->pipeline);
 	GstMessage *message = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, 
 		(GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
@@ -135,6 +144,8 @@ void GstClient::waitForEosOrError(GstData *data) {
 		gst_message_unref (message);
 	}
 	gst_object_unref (bus);
+
+	_endthread();
 }
 
 void GstClient::stopAndFreeResources(GstData *data) {

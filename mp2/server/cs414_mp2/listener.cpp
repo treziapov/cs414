@@ -133,7 +133,7 @@ void init_listener(int totalBandwidth){
 		return;
 	}
 
-	int currentPort = 6001;
+	int currentPort = 5001;
 	int videoPort = 7001;
 	int audioPort = 8001;
 
@@ -191,9 +191,27 @@ void init_listener(int totalBandwidth){
 
 			//Create a new connection in a seperate port
 			char buffer[512];
+			result = NULL;
+			memset(&hints, 0x00, sizeof(hints));
+			hints.ai_family = AF_INET;
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_protocol = IPPROTO_TCP;
+			hints.ai_flags = AI_PASSIVE;
+			
 			iResult = getaddrinfo(NULL, itoa(currentPort, buffer, 10), &hints, &result);
+			if(iResult != 0){
+				printf("getaddrinfo failed");
+			}
+
 			SOCKET newListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+			if(newListenSocket == INVALID_SOCKET){
+				printf("socket failed");
+			}
+
 			iResult = bind(newListenSocket, result->ai_addr, (int)result->ai_addrlen);
+			if(iResult == SOCKET_ERROR){
+				printf("bind failed");
+			}
 			freeaddrinfo(result);
 
 			//Send the new port numbers to the client
@@ -202,6 +220,8 @@ void init_listener(int totalBandwidth){
 			send(ClientSocket, (char *)&audioPort, sizeof(int), 0);
 
 			data->ClientSocket = accept(newListenSocket, NULL, NULL);
+			fprintf(stderr, "error: %d\n", WSAGetLastError());
+			recv(data->ClientSocket, buffer, sizeof(int), 0);
 
 			//Create a thread that will handle everything for the current client
 			_beginthread(handleConnection, 0, data);
@@ -262,15 +282,16 @@ void handleConnection(void * ptr){
 	// Start streaming data to client
 	printf("streaming to: %s\n", data->gstData->clientIp);
 	GstServer::initPipeline(data->gstData, data->videoPort, data->audioPort);
-	GstServer::buildPipeline(data->gstData);
+	GstServer::buildPipeline(data->gstData, streamMode);
 	GstServer::setPipelineToRun(data->gstData);
-	GstServer::waitForEosOrError(data->gstData);
-
+	_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
+	
 	bool endStream = false;
 	while(endStream == false){
 		int buffer[2]; //0 - Port Number of Client, 1 - Signal
-		recv(ClientSocket, (char *)buffer, 2 * sizeof(int), 0);
-
+		recv(ClientSocket, (char *)buffer, sizeof(int), 0);
+		recv(ClientSocket, (char *)&buffer[1], sizeof(int), 0);
+		
 		if(buffer[1] == STOP){
 			//Call function to stop the stream
 
@@ -279,12 +300,16 @@ void handleConnection(void * ptr){
 			endStream = true;
 		}else if(buffer[1] == PAUSE){
 			//Call pause function
+			fprintf(stderr, "pause\n");
 		}else if(buffer[1] == RESUME){
 			//Call resume function
+			fprintf(stderr, "resume\n");
 		}else if(buffer[1] == REWIND){
 			//Call rewind function
+			fprintf(stderr, "rewind\n");
 		}else if(buffer[1] == FAST_FORWARD){
 			//Call fast forward function
+			fprintf(stderr, "fast forward\n");
 		}else if(buffer[1] == SWITCH_MODE){
 			//Call function to switch modes
 
