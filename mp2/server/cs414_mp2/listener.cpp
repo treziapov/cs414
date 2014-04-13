@@ -214,13 +214,19 @@ void init_listener(int totalBandwidth){
 			}
 			freeaddrinfo(result);
 
+			iResult = listen(newListenSocket, SOMAXCONN);
+			if(iResult == SOCKET_ERROR){
+				printf("listen failed");
+				return;
+			}
+
 			//Send the new port numbers to the client
 			send(ClientSocket, (char *)&currentPort, sizeof(int), 0);
 			send(ClientSocket, (char *)&videoPort, sizeof(int), 0);
 			send(ClientSocket, (char *)&audioPort, sizeof(int), 0);
 
 			data->ClientSocket = accept(newListenSocket, NULL, NULL);
-			fprintf(stderr, "error: %d\n", WSAGetLastError());
+			
 			recv(data->ClientSocket, buffer, sizeof(int), 0);
 
 			//Create a thread that will handle everything for the current client

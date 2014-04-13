@@ -137,11 +137,8 @@ void stopStream(){
 void pauseStream(){
 	fprintf(stderr, "pause\n");
 	int signal = PAUSE;
-	int bytes = send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
+	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-
-	
-	fprintf(stderr, "error: %d\n", WSAGetLastError());
 }
 
 void resumeStream(){
