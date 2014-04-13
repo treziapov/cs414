@@ -1,73 +1,118 @@
-#define ACTIVE 1
-
 #include <process.h>
+#include <Windows.h>
 
 #include "gst_server.h"
 
-void GstServer::initPipeline(GstData *data, int videoPort, int audioPort) {
-	gst_init (NULL, NULL);
+const gchar* GstServer::videoDirectory = "/Documents/GitHub/cs414/mp2/server/cs414_mp2/";
+const gchar* GstServer::videoName480p = "mjpeg_640x480.avi";
+const gchar* GstServer::videoName240p = "mjpeg_320x240.avi";
+
+char* GstServer::getFilePathInHomeDirectory(const char* directory, const char* filename) {
+	char* home = getenv("HOMEPATH");
+	if (!home) {
+		home = getenv("HOME");
+		if (!home) {
+			fprintf(stderr, "Couldn't find HOMEPATH or HOME environment variable\n");
+			return NULL;
+		}
+	}
+	char *curr = home;
+	while (*curr != 0) {
+	if (*curr == '\\')
+		*curr = '/';
+		curr;
+	}
 	
-	data->videoSource = gst_element_factory_make ("videotestsrc", "videoSource");
-	data->videoEncoder = gst_element_factory_make ("ffenc_mjpeg", "videoEncoder");
+	char path[124];
+	strcpy (path, home);
+	strcat (path, directory);
+	strcat (path, filename);
+	printf ("getFilePathInHomeDirectory: generated path - %s\n", path);
+	return path;
+}
+
+void GstServer::initPipeline(GstData *data) {
+	gst_init (NULL, NULL);
+
+	data->pipeline = gst_pipeline_new ("streaming_server_pipeline");
+	data->fileSource = gst_element_factory_make ("filesrc", "fileSource");
+	data->decoder = gst_element_factory_make ("decodebin2", "decoder");
+
+	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
+	data->videoRate = gst_element_factory_make ("videorate", "videoRate");
+	data->videoCapsFilter = gst_element_factory_make ("capsfilter", "videoCapsFilter");
+	data->videoEncoder = gst_element_factory_make ("jpegenc", "videoEncoder");
 	data->videoRtpPay = gst_element_factory_make ("rtpjpegpay", "videoRtpPay");
 	data->videoUdpSink = gst_element_factory_make ("udpsink", "videoUdpSink");
-	
-	data->audioSource = gst_element_factory_make ("audiotestsrc", "audioSource");
+
+	data->audioQueue = gst_element_factory_make ("queue", "audioQueue");
 	data->audioEncoder = gst_element_factory_make ("mulawenc", "audioEncoder");
 	data->audioRtpPay = gst_element_factory_make ("rtppcmupay", "audioRtpPay");
 	data->audioUdpSink = gst_element_factory_make ("udpsink", "audioUdpSink");
-	
-	data->pipeline = gst_pipeline_new ("streaming_server_pipeline");
-	
-	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", videoPort, NULL);
-	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", audioPort, NULL);
 
-	printf("Streaming video to port %d, and audio to port %d\n", videoPort, audioPort);
-	
-	if (!data->pipeline || !data->videoSource || !data->videoEncoder || 
+	if (!data->pipeline || !data->decoder || !data->fileSource ) {
+		g_printerr ("Not all general pipeline elements could be created.\n");
+	}
+
+	if ( !data->videoQueue || !data->videoCapsFilter || !data->videoRate || !data->videoEncoder || 
 		!data->videoRtpPay || !data->videoUdpSink) {
 			g_printerr ("Not all video elements could be created.\n");
 	}
-	if (!data->pipeline || !data->audioSource || !data->audioEncoder || 
-		!data->audioRtpPay || !data->audioUdpSink) {
+	if (!data->audioQueue || !data->audioEncoder || !data->audioRtpPay || !data->audioUdpSink) {
 			g_printerr ("Not all audio elements could be created.\n");
 	}
 }
 
-void GstServer::buildPipeline(GstData *data, int streamMode) {
-	if(streamMode == ACTIVE){
-		gst_bin_add_many (GST_BIN (data->pipeline), 
-			data->videoSource, data->videoEncoder, data->videoRtpPay, data->videoUdpSink,
-			data->audioSource, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
-		if (!gst_element_link (data->videoSource, data->videoEncoder)) {
-			g_printerr("Couldn't link: videoSource - encoder.\n");
+void GstServer::configurePipeline(GstData *data) {
+	gchar *videoFilePath;
+	gint videoFrameRate;
+	if (data->mode == Active) {
+		videoFrameRate = 20;
+		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName480p);
+	}
+	else {
+		videoFrameRate = 10;
+		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName240p);
+	}
+
+	GstCaps *videoRateCaps = gst_caps_new_simple (
+		"video/x-raw-yuv",
+		"framerate", GST_TYPE_FRACTION, videoFrameRate, 1, NULL);
+
+	g_object_set (data->videoCapsFilter, "caps", videoRateCaps, NULL);
+	g_object_set (data->fileSource, "location", videoFilePath, NULL);
+	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", data->videoPort, NULL);
+	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", data->audioPort, NULL);
+}
+
+void GstServer::buildPipeline(GstData *data) {
+	if(data->mode == Active){
+		gst_bin_add_many (
+			GST_BIN (data->pipeline), 
+			data->fileSource, data->decoder,
+			data->videoQueue, data->videoRate, data->videoCapsFilter, 
+			data->videoEncoder, data->videoRtpPay, data->videoUdpSink,
+			data->audioQueue, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
+		if (!gst_element_link(data->fileSource, data->decoder)) {
+			g_printerr ("Failed to link fileSource with decoder\n");
 		}
-		if (!gst_element_link (data->videoEncoder, data->videoRtpPay)) {
-			g_printerr("Couldn't link: encoder - videoRtpPay.\n");
-		}	
-		if (!gst_element_link (data->videoRtpPay, data->videoUdpSink)) {
-			g_printerr("Couldn't link: videoRtpPay - videoUdpSink.\n");
+		if (!gst_element_link_many(data->decoder, data->videoQueue, data->videoRate, 
+				data->videoCapsFilter, data->videoEncoder, data->videoRtpPay, data->videoUdpSink, NULL)) {
+					g_printerr ("Failed to link video streaming pipeline\n");
 		}
-		if (!gst_element_link (data->audioSource, data->audioEncoder)) {
-			g_printerr("Couldn't link: audioSource - audioEncoder.\n");
-		}
-		if (!gst_element_link (data->audioEncoder, data->audioRtpPay)) {
-			g_printerr("Couldn't link: audioEncoder - audioRtpPay.\n");
-		}	
-		if (!gst_element_link (data->audioRtpPay, data->audioUdpSink)) {
-			g_printerr("Couldn't link: audioRtpPay - audioUdpSink.\n");
+		if (!gst_element_link_many(data->decoder, data->audioQueue, data->audioEncoder, 
+				data->audioRtpPay, data->audioUdpSink, NULL)) {
+					g_printerr ("Failed to link audio streaming pipeline\n");
 		}
 	}else{
-		gst_bin_add_many (GST_BIN (data->pipeline), 
-			data->videoSource, data->videoEncoder, data->videoRtpPay, data->videoUdpSink, NULL);
-		if (!gst_element_link (data->videoSource, data->videoEncoder)) {
-			g_printerr("Couldn't link: videoSource - encoder.\n");
-		}
-		if (!gst_element_link (data->videoEncoder, data->videoRtpPay)) {
-			g_printerr("Couldn't link: encoder - videoRtpPay.\n");
-		}	
-		if (!gst_element_link (data->videoRtpPay, data->videoUdpSink)) {
-			g_printerr("Couldn't link: videoRtpPay - videoUdpSink.\n");
+		gst_bin_add_many (
+			GST_BIN (data->pipeline), 
+			data->fileSource, data->decoder,
+			data->videoQueue, data->videoRate, data->videoCapsFilter, 
+			data->videoEncoder, data->videoRtpPay, data->videoUdpSink, NULL);
+		if (!gst_element_link_many (data->fileSource, data->decoder, data->videoQueue, data->videoRate,
+				data->videoCapsFilter, data->videoEncoder, data->videoRtpPay, data->videoUdpSink, NULL)) {
+					g_printerr ("Failed to link passive video streaming pipeline\n");
 		}
 	}
 }

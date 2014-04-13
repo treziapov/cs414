@@ -124,7 +124,6 @@ int startStream(Settings * settingsData){
 }
 
 void stopStream(){
-	//send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 	sendServerSignal(STOP);
 	closesocket(ServerSocket);
 	ServerSocket = INVALID_SOCKET;
@@ -146,33 +145,6 @@ void rewindStream(){
 void fastforwardStream(){
 	sendServerSignal(FAST_FORWARD);
 }
-
-//	fprintf(stderr, "pause\n");
-//	int signal = PAUSE;
-//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-//}
-//
-//void resumeStream(){
-//	fprintf(stderr, "resume\n");
-//	int signal = RESUME;
-//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-//}
-//
-//void rewindStream(){
-//	fprintf(stderr, "rewind\n");
-//	int signal = REWIND;
-//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-//}
-//
-//void fastforwardStream(){
-//	fprintf(stderr, "fast forward\n");
-//	int signal = FAST_FORWARD;
-//	send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
-//	send(ServerSocket, (char *)&signal, sizeof(int), 0);
-//}
 
 int calculateBandwidth(Settings * settingsData){
 	int audioBitRate = 0;

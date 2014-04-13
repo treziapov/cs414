@@ -17,6 +17,17 @@
 
 Resources resource;
 
+void switchMode(ThreadData *data) {
+	if (data->mode == ACTIVE) {
+		data->mode = PASSIVE;
+		data->gstData->mode = (Mode)PASSIVE;
+	}
+	else {
+		data->mode = ACTIVE;
+		data->gstData->mode = (Mode)ACTIVE;
+	}
+}
+
 Client * addClient(Client * newClient){
 	resource.numClients++;
 
@@ -292,19 +303,16 @@ void handleConnection(void * ptr){
 	SOCKET ClientSocket = data->ClientSocket;
 
 	// Start streaming data to client
-	printf("streaming to: %s\n", data->gstData->clientIp);
-	GstServer::initPipeline(data->gstData, data->videoPort, data->audioPort);
-	GstServer::buildPipeline(data->gstData, streamMode);
-	GstServer::setPipelineToRun(data->gstData);
-	_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
+	printf("connection from: %s\n", data->gstData->clientIp);
+
+	data->gstData->videoPort = data->videoPort;
+	data->gstData->audioPort = data->audioPort;
+	data->gstData->mode = (Mode)streamMode;
 
 	bool endStream = false;
 	while(endStream == false) {
 		int signal;
 		recv(ClientSocket, (char*)&signal, sizeof(int), 0);
-		//int buffer[2]; //0 - Port Number of Client, 1 - Signal
-		//recv(ClientSocket, (char *)buffer, sizeof(int), 0);
-		//recv(ClientSocket, (char *)&buffer[1], sizeof(int), 0);
 
 		if (signal != 0) {
 			printf("client signal: %d\n", signal);
@@ -312,43 +320,32 @@ void handleConnection(void * ptr){
 
 		if (signal == PLAY) {
 			printf("got PLAY message\n");
-			GstServer::playPipeline(data->gstData);
-		}else if(signal == STOP){
+			GstServer::initPipeline(data->gstData);
+			GstServer::configurePipeline(data->gstData);	
+			GstServer::buildPipeline(data->gstData);
+			GstServer::setPipelineToRun(data->gstData);
+			_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
+		}
+		else if (signal == STOP) {
 			printf("got STOP message\n");
-			GstServer::stopPipeline(data->gstData);
+			GstServer::stopAndFreeResources(data->gstData);
 			removeClient(data->client->port);
 			endStream = true;
-		}else if(signal == PAUSE){
+		}
+		else if (signal == PAUSE) {
 			printf("got PAUSE message\n");
 			GstServer::pausePipeline(data->gstData);
-		}else if(signal == RESUME){
+		}
+		else if (signal == RESUME) {
 			printf("got RESUME message\n");
 			GstServer::playPipeline(data->gstData);
-			//Call resume function
-		}else if(signal == SWITCH_MODE){
+		}
+		else if (signal == SWITCH_MODE) {
 			printf("got SWITCH MODE message\n");
-			//Call function to switch modes
-			int newBandwidth;
-			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
-
-			int oldBandwidth = findClientBandwidth(port);
-			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
-				int signal = ACCEPT;
-				send(ClientSocket, (char *)&signal, sizeof(int), 0);
-
-				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
-
-				updateClientBandwidth(port, newBandwidth);
-
-				//Call function to switch modes
-			}else{
-				int signal = REJECT;
-				send(ClientSocket, (char *)&signal, sizeof(int), 0);
-
-				endStream = false;
-			}
-
-		}else if(signal == NEW_RESOURCES){
+			switchMode(data);
+			GstServer::configurePipeline(data->gstData);
+		}
+		else if (signal == NEW_RESOURCES){
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 

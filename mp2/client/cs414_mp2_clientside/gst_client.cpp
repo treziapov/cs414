@@ -67,10 +67,10 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 
 void GstClient::buildPipeline(GstData *data) {
 	if (data->mode == PASSIVE) {
-		printf("passive\n");
+		printf("Building pipeline for Passive mode.\n");
 		gst_bin_add_many (GST_BIN (data->pipeline), 
-			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder, data->videoSink, data->videoQueue, data->videoTee, data->videoDecQueue, data->videoDecAppQueue, data->videoAppSink,
-			data->jitterBuffer, data->jitterTee, data->jitterQueue, data->jitterAppSink,
+			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder, data->videoSink, data->videoQueue, data->videoTee, data->videoDecQueue, data->videoDecAppQueue, data->videoAppSink,
+			data->jitterTee, data->jitterQueue, data->jitterAppSink,
 			NULL);
 		//This is the simple pipeline
 		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
@@ -129,11 +129,11 @@ void GstClient::buildPipeline(GstData *data) {
 	}
 	else if (data->mode == ACTIVE) {
 		gst_bin_add_many (GST_BIN (data->pipeline),
-			data->videoUdpSource, data->videoRtpDepay, data->videoDecoder, data->videoSink,
+			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder, data->videoSink,
 			data->videoQueue, data->videoTee, data->videoDecQueue, data->videoDecAppQueue, data->videoAppSink,
 			data->audioUdpSource, data->audioRtpDepay, data->audioDecoder, data->audioSink,
 			data->audioQueue, data->audioAppSink, data->audioTee, data->audioAppQueue,
-			data->jitterBuffer, data->jitterTee, data->jitterQueue, data->jitterAppSink,
+			data->jitterTee, data->jitterQueue, data->jitterAppSink,
 			 NULL);
 		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
 			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
