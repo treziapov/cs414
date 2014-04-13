@@ -27,6 +27,9 @@
     <ClInclude Include="connecter.h" />
     <ClInclude Include="gst_client.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="resource.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{34B87E4C-AACC-4C3E-B153-E4BF0B4B9DA8}</ProjectGuid>

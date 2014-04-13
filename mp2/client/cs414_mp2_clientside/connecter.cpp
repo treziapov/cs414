@@ -126,7 +126,7 @@ int startStream(Settings * settingsData){
 void stopStream(){
 	sendServerSignal(STOP);
 	closesocket(ServerSocket);
-	ServerSocket = INVALID_SOCKET;
+	//ServerSocket = INVALID_SOCKET;
 	WSACleanup();
 }
 
@@ -171,7 +171,6 @@ int switchMode(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = SWITCH_MODE;
-		send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		int newBandwidth = calculateBandwidth(settingsData);
@@ -201,7 +200,6 @@ int changeResources(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = NEW_RESOURCES;
-		send(ServerSocket, (char *)&messagePort, sizeof(int), 0);
 		send(ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		int newBandwidth = calculateBandwidth(settingsData);

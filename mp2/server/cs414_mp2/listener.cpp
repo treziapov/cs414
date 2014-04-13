@@ -199,11 +199,14 @@ void init_listener(int totalBandwidth){
 			data->port = currentPort;
 			data->videoPort = videoPort;
 			data->audioPort = audioPort;
+
 			data->gstData = &currentClient->gstData;
 			data->gstData->clientIp = strdup(clientIp);
 			data->gstData->videoPort = videoPort;
 			data->gstData->audioPort = audioPort;
 			data->gstData->mode = (Mode)newRequest.mode;
+			data->gstData->videoFrameRate = newRequest.rate;
+			data->gstData->resolution = (Resolution)newRequest.resolution;
 			data->client = currentClient;
 
 			//Send accept signal
@@ -303,6 +306,8 @@ void handleConnection(void * ptr){
 	int videoResolution = data->resolution;
 	int streamMode = data->mode;
 	int port = data->port;
+	data->gstData->resolution = (Resolution)data->resolution;
+	data->gstData->videoFrameRate = data->rate;
 	SOCKET ClientSocket = data->ClientSocket;
 
 	// Start streaming data to client
@@ -322,16 +327,11 @@ void handleConnection(void * ptr){
 
 		if (signal == PLAY) {
 			printf("got PLAY message\n");
-			/*GstServer::initPipeline(data->gstData);
-			GstServer::buildPipeline(data->gstData);
-			GstServer::configurePipeline(data->gstData);*/
 			GstServer::setPipelineToRun(data->gstData);
 			_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
 		}
 		else if (signal == STOP) {
 			printf("got STOP message\n");
-			GstServer::stopAndFreeResources(data->gstData);
-			GstServer::stopPipeline(data->gstData);
 			endStream = true;
 		}
 		else if (signal == PAUSE) {
@@ -344,10 +344,40 @@ void handleConnection(void * ptr){
 		}
 		else if (signal == SWITCH_MODE) {
 			printf("got SWITCH MODE message\n");
-			switchMode(data);
-			GstServer::configurePipeline(data->gstData);
+			int newBandwidth;
+			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
+
+			int oldBandwidth = findClientBandwidth(port);
+			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
+				int signal = ACCEPT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+
+				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
+				updateClientBandwidth(port, newBandwidth);
+
+				switchMode(data);
+				GstServer::stopAndFreeResources(data->gstData);
+				GstServer::initPipeline(data->gstData);
+				GstServer::buildPipeline(data->gstData);
+				GstServer::configurePipeline(data->gstData);
+				GstServer::playPipeline(data->gstData);
+			}
+			else {
+				int signal = REJECT;
+				send(ClientSocket, (char *)&signal, sizeof(int), 0);
+				endStream = true;
+			}
+		}
+		else if (signal == REWIND) {
+			printf ("got REWIND message\n");
+			GstServer::rewindPipeline(data->gstData);
+		}
+		else if (signal == FAST_FORWARD) {
+			printf ("got FAST FORWARD message\n");
+			GstServer::fastForwardPipeline(data->gstData);
 		}
 		else if (signal == NEW_RESOURCES){
+			printf ("got NEW RESOURCES message\n");
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 

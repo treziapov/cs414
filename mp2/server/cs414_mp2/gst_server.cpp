@@ -57,7 +57,7 @@ static void decoderPadAdded_handler (GstElement *source, GstPad *newPad, GstData
 		}
 		gst_object_unref (videoQueueSinkPad);
 	}
-	else if (g_str_has_prefix (newPadType, "audio/x-raw")) {
+	else if (g_str_has_prefix (newPadType, "audio/x-raw") /*&& data->mode == Active*/) {
 		GstPad *audioQueueSinkPad = gst_element_get_static_pad (data->audioQueue, "sink");
 		if (gst_pad_is_linked (audioQueueSinkPad)) {
 			g_print ("\t Audio already linked.\n");
@@ -71,6 +71,9 @@ static void decoderPadAdded_handler (GstElement *source, GstPad *newPad, GstData
 			g_print ("\t Link succeeded, type - '%s'.\n", newPadType);
 		}
 		gst_object_unref (audioQueueSinkPad);
+	}
+	else {
+		g_print ("\t Skipped linking pad\n");
 	}
 	if (newPadCaps != NULL) {
 		gst_caps_unref (newPadCaps);
@@ -91,6 +94,8 @@ void GstServer::initPipeline(GstData *data) {
 	data->videoUdpSink = gst_element_factory_make ("udpsink", "videoUdpSink");
 
 	data->audioQueue = gst_element_factory_make ("queue", "audioQueue");
+	data->audioRate = gst_element_factory_make ("audioresample", "audioRate");
+	data->audioCapsFilter = gst_element_factory_make ("capsfilter", "audioCapsFilter");
 	data->audioEncoder = gst_element_factory_make ("mulawenc", "audioEncoder");
 	data->audioRtpPay = gst_element_factory_make ("rtppcmupay", "audioRtpPay");
 	data->audioUdpSink = gst_element_factory_make ("udpsink", "audioUdpSink");
@@ -105,28 +110,30 @@ void GstServer::initPipeline(GstData *data) {
 		!data->videoRtpPay || !data->videoUdpSink) {
 			g_printerr ("Not all video elements could be created.\n");
 	}
-	if (!data->audioQueue || !data->audioEncoder || !data->audioRtpPay || !data->audioUdpSink) {
+	if (!data->audioQueue || !data->audioCapsFilter || ! data->audioRate || !data->audioEncoder || 
+		!data->audioRtpPay || !data->audioUdpSink) {
 			g_printerr ("Not all audio elements could be created.\n");
 	}
 }
 
 void GstServer::configurePipeline(GstData *data) {
 	gchar *videoFilePath;
-	gint videoFrameRate;
-	if (data->mode == Active) {
-		videoFrameRate = 20;
-		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName480p);
+	if (data->resolution == R240) {
+		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName240p);
 	}
 	else {
-		videoFrameRate = 10;
-		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName240p);
+		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName480p);
 	}
 
 	GstCaps *videoRateCaps = gst_caps_new_simple (
 		"video/x-raw-yuv",
-		"framerate", GST_TYPE_FRACTION, videoFrameRate, 1, NULL);
+		"framerate", GST_TYPE_FRACTION, data->videoFrameRate, 1, NULL);
+	GstCaps *audioRateCaps = gst_caps_new_simple (
+		"audio/x-raw-int",
+		"rate", G_TYPE_INT, 8000, NULL);
 
 	g_object_set (data->videoCapsFilter, "caps", videoRateCaps, NULL);
+	g_object_set (data->audioCapsFilter, "caps", audioRateCaps, NULL);
 	g_object_set (data->fileSource, "location", videoFilePath, NULL);
 	g_object_set (data->videoUdpSink, "host", data->clientIp, "port", data->videoPort, NULL);
 	g_object_set (data->audioUdpSink, "host", data->clientIp, "port", data->audioPort, NULL);
@@ -135,7 +142,6 @@ void GstServer::configurePipeline(GstData *data) {
 		videoFilePath, data->clientIp, data->videoPort, data->audioPort);
 
 	delete videoFilePath;
-	g_object_unref (videoRateCaps);
 }
 
 void GstServer::buildPipeline(GstData *data) {
@@ -145,9 +151,10 @@ void GstServer::buildPipeline(GstData *data) {
 			data->fileSource, data->decoder,
 			data->videoQueue, data->videoRate, data->videoCapsFilter, 
 			data->videoEncoder, data->videoRtpPay, data->videoUdpSink,
-			data->audioQueue, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
-		if (!gst_element_link_many(data->audioQueue, data->audioEncoder, 
-				data->audioRtpPay, data->audioUdpSink, NULL)) {
+			data->audioQueue, data->audioRate, data->audioCapsFilter, 
+			data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
+		if (!gst_element_link_many(data->audioQueue, data->audioRate, 
+				data->audioCapsFilter, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL)) {
 					g_printerr ("Failed to link audio streaming pipeline.\n");
 		}
 	}
@@ -175,7 +182,9 @@ void GstServer::setPipelineToRun(GstData *data) {
 	GstStateChangeReturn ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
 	if (ret == GST_STATE_CHANGE_FAILURE) {
 		g_printerr ("Unable to set the pipeline to the playing state.\n");
-		g_object_unref (data->pipeline);
+		if (data->pipeline) {
+			g_object_unref (data->pipeline);
+		}
 	} 
 	else {
 		g_print("Pipeline is PLAYING.\n");	
@@ -211,12 +220,15 @@ void GstServer::waitForEosOrError(void *voidData) {
 		gst_message_unref (message);
 	}
 	gst_object_unref (bus);
+	stopAndFreeResources(data);
 	_endthread();
 }
 
 void GstServer::stopAndFreeResources(GstData *data) {
-	gst_element_set_state (data->pipeline, GST_STATE_NULL);
-	gst_object_unref (data->pipeline);
+	if (data->pipeline) {
+		gst_element_set_state (data->pipeline, GST_STATE_NULL);
+		gst_object_unref (data->pipeline);
+	}
 }
 
 void GstServer::playPipeline(GstData *data) {
@@ -247,5 +259,60 @@ void GstServer::stopPipeline(GstData *data) {
 	else {
 		g_print ("Pipeline is STOPPED\n");
 	}
-	gst_object_unref (data->pipeline);
+	if (data->pipeline) {
+		gst_object_unref (data->pipeline);
+	}
+}
+
+/*
+Send a seek event for navigating the video content
+i.e. fast-forwarding, rewinding
+*/
+void sendSeekEvent(GstData *data) {
+	gint64 position;
+	GstFormat format = GST_FORMAT_TIME;
+	GstEvent *seek_event;
+
+	// Obtain the current position, needed for the seek event
+	if (!gst_element_query_position (data->pipeline, &format, &position)) {
+		g_printerr ("Unable to retrieve current position.\n");
+		return;
+	}
+
+	// Create the seek event
+	if (data->playbackRate > 0) {
+		seek_event = gst_event_new_seek (data->playbackRate, GST_FORMAT_TIME, GstSeekFlags(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
+			GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
+	} 
+	else {
+		seek_event = gst_event_new_seek (data->playbackRate, GST_FORMAT_TIME, GstSeekFlags(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
+			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_SET, position);
+	}
+
+	// Send the event
+	gst_element_send_event (data->pipeline, seek_event);
+	//gst_element_send_event (data->audioUdpSink, seek_event);
+	g_print ("Current playbackRate: %g\n", data->playbackRate);
+}
+
+void GstServer::rewindPipeline(GstData *data) {
+	if (data->playbackRate > 0) {
+		data->playbackRate = -1.0;
+	}
+	else {
+		data->playbackRate *= 2.0;
+	}
+	sendSeekEvent(data);
+	playPipeline(data);
+}
+
+void GstServer::fastForwardPipeline(GstData *data) {
+	if (data->playbackRate < 0) {
+		data->playbackRate = 1.0;
+	}
+	else {
+		data->playbackRate *= 2.0;
+	}
+	sendSeekEvent(data);
+	playPipeline(data);
 }
