@@ -160,6 +160,7 @@ void rewindVideo(GtkWidget *widget,  gpointer data){
 void stopVideo(GtkWidget *widget, gpointer data){
 	started=0;
 	stopStream();
+	GstClient::stopAndFreeResources(&gstData);
 }
 
 void updateBandwidth(GtkWidget *widget, gpointer data){

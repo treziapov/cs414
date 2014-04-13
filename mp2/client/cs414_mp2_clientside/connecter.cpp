@@ -64,11 +64,6 @@ void connect(Settings * settingsData){
 			newConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
 			iResult = connect(newConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-			signal = 1;
-			send(newConnectSocket, (char *)&signal, sizeof(int), 0);
-			if(iResult != SOCKET_ERROR){
-				break;
-			}
 		}
 		freeaddrinfo(result);
 		
@@ -107,17 +102,15 @@ bool isEnoughBandwidth(Settings * settingsData){
 }
 
 int startStream(Settings * settingsData){
-	if(ServerSocket != INVALID_SOCKET){
-		if(isEnoughBandwidth(settingsData)){
-			connect(settingsData);
-			
-			if(ServerSocket == SOCKET_ERROR){
-				ServerSocket = INVALID_SOCKET;
-				return CONNECTION_ERROR;
-			}
-		}else{
-			return RESOURCES_ERROR;
+	if(isEnoughBandwidth(settingsData)){
+		connect(settingsData);
+		
+		if(ServerSocket == SOCKET_ERROR){
+			ServerSocket = INVALID_SOCKET;
+			return CONNECTION_ERROR;
 		}
+	}else{
+		return RESOURCES_ERROR;
 	}
 
 	return 0;

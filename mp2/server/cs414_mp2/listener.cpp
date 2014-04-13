@@ -53,7 +53,13 @@ void removeClient(int port){
 	if(resource.clients != NULL){
 		delete[] resource.clients;
 	}
-	resource.clients = newArray;
+
+	resource.numClients--;
+	if(resource.numClients == 0){
+		resource.clients = NULL;
+	}else{
+		resource.clients = newArray;
+	}
 }
 
 int findClientBandwidth(int port){
@@ -226,8 +232,7 @@ void init_listener(int totalBandwidth){
 			send(ClientSocket, (char *)&audioPort, sizeof(int), 0);
 
 			data->ClientSocket = accept(newListenSocket, NULL, NULL);
-			
-			recv(data->ClientSocket, buffer, sizeof(int), 0);
+			closesocket(newListenSocket);
 
 			//Create a thread that will handle everything for the current client
 			_beginthread(handleConnection, 0, data);
@@ -299,10 +304,6 @@ void handleConnection(void * ptr){
 		recv(ClientSocket, (char *)&buffer[1], sizeof(int), 0);
 		
 		if(buffer[1] == STOP){
-			//Call function to stop the stream
-
-			removeClient(buffer[0]);
-
 			endStream = true;
 		}else if(buffer[1] == PAUSE){
 			//Call pause function
@@ -317,8 +318,6 @@ void handleConnection(void * ptr){
 			//Call fast forward function
 			fprintf(stderr, "fast forward\n");
 		}else if(buffer[1] == SWITCH_MODE){
-			//Call function to switch modes
-
 			int newBandwidth;
 			recv(ClientSocket, (char *)&newBandwidth, sizeof(int), 0);
 
@@ -330,11 +329,12 @@ void handleConnection(void * ptr){
 				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
 
 				updateClientBandwidth(port, newBandwidth);
+
+				//Call function to switch modes
 			}else{
 				int signal = REJECT;
 				send(ClientSocket, (char *)&signal, sizeof(int), 0);
 
-				removeClient(port);
 				endStream = false;
 			}
 
@@ -354,7 +354,6 @@ void handleConnection(void * ptr){
 				int signal = REJECT;
 				send(ClientSocket, (char *)&signal, sizeof(int), 0);
 
-				removeClient(port);
 				endStream = false;
 			}
 		}
@@ -362,5 +361,7 @@ void handleConnection(void * ptr){
 
 	GstServer::stopAndFreeResources(data->gstData);
 	closesocket(ClientSocket);
+	removeClient(port);
+	fprintf(stderr, "Closing connection with client on port %d\n", port);
 	_endthread();
 }
