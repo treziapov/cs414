@@ -11,6 +11,7 @@
 #include "gst_client.h"
 
 GtkWidget *mainWindow;
+GtkWidget *videoWindow;
 GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
 GtkWidget *current_bandwidth;
@@ -135,10 +136,12 @@ void updateResolution(GtkWidget * widget, gpointer data){
 }
 
 void playVideo(GtkWidget *widget,  gpointer data){
-	GstClient::setPipelineToRun(&gstData);
-
 	if(started == 0){
 		int retval = startStream(&settingsData);
+		GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
+		GstClient::buildPipeline(&gstData);
+		GstClient::setPipelineToRun(&gstData);
+		setVideoWindow_event(videoWindow);
 
 		if(retval == 0){
 			started=1;
@@ -160,6 +163,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 	}
 	else{
 		//send resume
+		GstClient::setPipelineToRun(&gstData);
 		resumeStream();
 	}
 }
@@ -302,7 +306,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 {
 	printf("%d\n", getBandwidth());
 	;		// Contains all other windows
-	GtkWidget *videoWindow;		// Contains the video
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
 	GtkWidget *mainHBox;		// Hbox, holds video window and option box
 	GtkWidget *videoControls;	// Hbox, holds the buttons and the slider for video
@@ -427,6 +430,7 @@ int main(int argc, char* argv[])
 	settingsData.mode = ACTIVE;
 	settingsData.rate = 15;
 	settingsData.resolution = R240;
+	gstData.mode = ACTIVE;
 
 	sinkData.videoTSD = 0;
 	sinkData.audioTSD = 0;
@@ -434,11 +438,9 @@ int main(int argc, char* argv[])
 	sinkData.failures = 0;
 	sinkData.successes = 1;
 
-	connect(&settingsData);
-
-	gstData.mode = ACTIVE;
-	GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
-	GstClient::buildPipeline(&gstData);
+	//connect(&settingsData);
+	//GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
+	//GstClient::buildPipeline(&gstData);
 
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);

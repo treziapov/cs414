@@ -106,19 +106,19 @@ bool isEnoughBandwidth(Settings * settingsData){
 }
 
 int startStream(Settings * settingsData){
-	//if(ServerSocket != INVALID_SOCKET){
-	//	if(isEnoughBandwidth(settingsData)){
-	//		connect(settingsData);
-	//		
-	//		if(ServerSocket == SOCKET_ERROR){
-	//			ServerSocket = INVALID_SOCKET;
-	//			return CONNECTION_ERROR;
-	//		}else{
-	//		}
-	//	}else{
-	//		return RESOURCES_ERROR;
-	//	}
-	//}
+	if(ServerSocket != INVALID_SOCKET){
+		if(isEnoughBandwidth(settingsData)){
+			connect(settingsData);
+			
+			if(ServerSocket == SOCKET_ERROR){
+				ServerSocket = INVALID_SOCKET;
+				return CONNECTION_ERROR;
+			}else{
+			}
+		}else{
+			return RESOURCES_ERROR;
+		}
+	}
 	sendServerSignal(PLAY);
 	return 0;
 }
