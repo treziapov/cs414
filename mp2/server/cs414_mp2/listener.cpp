@@ -328,12 +328,8 @@ void handleConnection(void * ptr){
 		}
 		else if (signal == STOP) {
 			printf("got STOP message\n");
-<<<<<<< HEAD
 			GstServer::stopAndFreeResources(data->gstData);
-			removeClient(data->client->port);
-=======
 			GstServer::stopPipeline(data->gstData);
->>>>>>> f5058110e8208de25c558ac299e07008d2f87ac8
 			endStream = true;
 		}
 		else if (signal == PAUSE) {

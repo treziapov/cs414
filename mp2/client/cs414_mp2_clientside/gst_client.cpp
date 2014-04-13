@@ -115,17 +115,10 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 
 void GstClient::buildPipeline(GstData *data) {
 	if (data->mode == PASSIVE) {
-<<<<<<< HEAD
-		printf("Building pipeline for Passive mode.\n");
-		gst_bin_add_many (GST_BIN (data->pipeline), 
-			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder, data->videoSink, data->videoQueue, data->videoTee, data->videoDecQueue, data->videoDecAppQueue, data->videoAppSink,
-			data->jitterTee, data->jitterQueue, data->jitterAppSink,
-=======
 		gst_bin_add_many (GST_BIN (data->pipeline),
 			data->videoUdpSource, data->jitterBuffer, data->jitterTee, data->videoQueue, data->jitterQueue,
 			data->jitterAppSink, data->videoRtpDepay, data->videoDecoder, data->videoTee, data->videoDecQueue, 
 			data->videoDecAppQueue, data->videoAppSink, data->videoSink,
->>>>>>> f5058110e8208de25c558ac299e07008d2f87ac8
 			NULL);
 		//This is the VIDEO pipeline with the tees and appsinks
 		//Linking pipeline
@@ -171,36 +164,12 @@ void GstClient::buildPipeline(GstData *data) {
 	}
 	else if (data->mode == ACTIVE) {
 		gst_bin_add_many (GST_BIN (data->pipeline),
-<<<<<<< HEAD
-			data->videoUdpSource, data->jitterBuffer, data->videoRtpDepay, data->videoDecoder, data->videoSink,
-			data->videoQueue, data->videoTee, data->videoDecQueue, data->videoDecAppQueue, data->videoAppSink,
-			data->audioUdpSource, data->audioRtpDepay, data->audioDecoder, data->audioSink,
-			data->audioQueue, data->audioAppSink, data->audioTee, data->audioAppQueue,
-			data->jitterTee, data->jitterQueue, data->jitterAppSink,
-			 NULL);
-		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
-			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
-		}
-		if (!gst_element_link (data->jitterBuffer, data->videoRtpDepay)) {
-			g_printerr("Couldn't link: jitterBuffer - videoRtpDepay.\n");
-		}
-		if (!gst_element_link (data->videoRtpDepay, data->videoDecoder)) {
-			g_printerr("Couldn't link: videoRtpDepay - videoDecoder.\n");
-		}
-		if (!gst_element_link (data->videoDecoder, data->videoSink)) {
-			g_printerr("Couldn't link: videoDecoder - videoSink.\n");
-		}
-		/* This is the VIDEO pipeline with the tees and appsinks
-=======
 			data->videoUdpSource, data->jitterBuffer, data->jitterTee, data->videoQueue, data->jitterQueue,
 			data->jitterAppSink, data->videoRtpDepay, data->videoDecoder, data->videoTee, data->videoDecQueue, 
 			data->videoDecAppQueue, data->videoAppSink, data->videoSink, 
 			data->audioUdpSource, data->audioRtpDepay, data->audioDecoder, data->audioTee,
 			data->audioAppQueue, data->audioAppSink, data->audioQueue, data->audioSink,
 			NULL);
-		//This is the VIDEO pipeline with the tees and appsinks
->>>>>>> f5058110e8208de25c558ac299e07008d2f87ac8
-		//Linking pipeline
 		//Source to buffer
 		if (!gst_element_link (data->videoUdpSource, data->jitterBuffer)) {
 			g_printerr("Couldn't link: videoUdpSource - jitterBuffer.\n");
