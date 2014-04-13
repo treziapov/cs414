@@ -12,7 +12,6 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	data->videoUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
 	data->videoRtpDepay = gst_element_factory_make ("rtpjpegdepay", "videoRtpDepay");
 	data->videoDecoder = gst_element_factory_make ("ffdec_mjpeg", "videoDecoder");
-<<<<<<< HEAD
 	data->videoSink = gst_element_factory_make ("autovideosink", "videoSink");
 	/*data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
 	data->videoTee = gst_element_factory_make("tee", "videoTee");
@@ -20,11 +19,10 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	data->videoAppQueue = gst_element_factory_make("queue", "videoAppQueue");
 	data->videoDecQueue = gst_element_factory_make("queue", "videoDecQueue");
 	data->videoDecAppQueue = gst_element_factory_make("queue", "videoDecAppQueue");*/
-=======
+
 	data->videoSink = gst_element_factory_make ("d3dvideosink", "videoSink");
 	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
->>>>>>> 4d1aeb1c7faa4500b5c36ccd7e063a3a10c605a1
-	
+		
 	data->audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
 	data->audioUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
 	data->audioRtpDepay = gst_element_factory_make ("rtppcmudepay", "audioRtpDepay");
@@ -37,8 +35,8 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	
 	/*data->jitterTee = gst_element_factory_make("tee", "jitterTee");
 	data->jitterQueue = gst_element_factory_make("queue", "jitterQueue");
-	data->jitterAppSink = gst_element_factory_make("appsink", "jitterAppSink");
-	data->jitterBuffer = gst_element_factory_make("gstrtpjitterbuffer", "jitterBuffer");*/
+	data->jitterAppSink = gst_element_factory_make("appsink", "jitterAppSink");*/
+	data->jitterBuffer = gst_element_factory_make("gstrtpjitterbuffer", "jitterBuffer");
 	data->pipeline = gst_pipeline_new ("streaming_client_pipeline");
 	
 	char videoUri[32], audioUri[32];
@@ -51,9 +49,9 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	printf("Streaming video from port %d and audio from port %d\n", videoPort, audioPort);
 	
 	if (!data->pipeline ||
-		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || !data->videoDecoder || !data->videoSink || !data->videoQueue || !data->videoAppSink || !data->videoAppQueue || !data->videoDecQueue || !data->videoDecAppQueue ||
-		!data->audioUdpSource || !data->audioUdpCaps || !data->audioRtpDepay || !data->audioDecoder || !data->audioSink || !data->audioAppSink || !data-> audioAppQueue || 
-		!data->jitterBuffer || !data->jitterTee || !data->jitterAppSink || !data->jitterQueue) {
+		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || !data->videoDecoder || !data->videoSink || //!data->videoQueue || !data->videoAppSink || !data->videoAppQueue || !data->videoDecQueue || !data->videoDecAppQueue ||
+		!data->audioUdpSource || !data->audioUdpCaps || !data->audioRtpDepay || !data->audioDecoder || !data->audioSink || //!data->audioAppSink || !data-> audioAppQueue || 
+		!data->jitterBuffer) { //|| !data->jitterTee || !data->jitterAppSink || !data->jitterQueue) {
 			g_printerr ("Not all elements could be created.\n");
 	}
 

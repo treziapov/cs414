@@ -10,18 +10,15 @@ class GstData {
 		GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink, *videoQueue;
 		GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink, *audioQueue;
 		GstCaps *videoUdpCaps, *audioUdpCaps;
-<<<<<<< HEAD
-		GstElement *jitterBuffer, *jitterTee, *jitterAppSink, *jitterQueue, *videoAppQueue;
+		GstElement /**jitterBuffer,*/ *jitterTee, *jitterAppSink, *jitterQueue, *videoAppQueue;
 		GstElement *videoTee, *videoAppSink, *videoDecAppQueue, *videoDecQueue;
 		GstElement *audioTee, *audioAppSink, *audioAppQueue;
-=======
 		GstElement *jitterBuffer, *tee, *appSink, *appQueue;
 
 		GstData() {
 			mode = Active;
 			playbackRate = 1.0;
 		};
->>>>>>> 4d1aeb1c7faa4500b5c36ccd7e063a3a10c605a1
 };
 
 class GstClient {
