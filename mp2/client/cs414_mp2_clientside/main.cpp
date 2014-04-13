@@ -136,8 +136,8 @@ void updateResolution(GtkWidget * widget, gpointer data){
 
 void playVideo(GtkWidget *widget,  gpointer data){
 	GstClient::setPipelineToRun(&gstData);
+
 	if(started == 0){
-		//send start
 		int retval = startStream(&settingsData);
 
 		if(retval == 0){
@@ -148,16 +148,14 @@ void playVideo(GtkWidget *widget,  gpointer data){
 				GTK_DIALOG_DESTROY_WITH_PARENT ,
 				GTK_MESSAGE_ERROR,
 				GTK_BUTTONS_NONE,
-				"Connection error or server resource error"
-				)));
+				"Connection error or server resource error")));
 		}else{
 			//report client side error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
                 GTK_DIALOG_DESTROY_WITH_PARENT ,
                 GTK_MESSAGE_ERROR,
                 GTK_BUTTONS_NONE,
-                "There was a client-side error."
-                )));
+                "There was a client-side error.")));
 		}
 	}
 	else{

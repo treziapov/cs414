@@ -8,7 +8,7 @@ class GstData {
 		gchar* clientIp;
 		gint videoPort, audioPort;
 
-		GstElement *pipeline, *fileSource, *decoder;
+		GstElement *pipeline, *fileSource, *decodeBin, *decoder;
 		GstElement *videoQueue, *videoRate, *videoCapsFilter, *videoEncoder, *videoRtpPay, *videoUdpSink;
 		GstElement *audioQueue,*audioEncoder, *audioRtpPay, *audioUdpSink;
 

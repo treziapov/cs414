@@ -201,6 +201,9 @@ void init_listener(int totalBandwidth){
 			data->audioPort = audioPort;
 			data->gstData = &currentClient->gstData;
 			data->gstData->clientIp = strdup(clientIp);
+			data->gstData->videoPort = videoPort;
+			data->gstData->audioPort = audioPort;
+			data->gstData->mode = (Mode)newRequest.mode;
 			data->client = currentClient;
 
 			//Send accept signal
@@ -304,10 +307,9 @@ void handleConnection(void * ptr){
 
 	// Start streaming data to client
 	printf("connection from: %s\n", data->gstData->clientIp);
-
-	data->gstData->videoPort = data->videoPort;
-	data->gstData->audioPort = data->audioPort;
-	data->gstData->mode = (Mode)streamMode;
+	GstServer::initPipeline(data->gstData);
+	GstServer::buildPipeline(data->gstData);
+	GstServer::configurePipeline(data->gstData);
 
 	bool endStream = false;
 	while(endStream == false) {
@@ -320,9 +322,9 @@ void handleConnection(void * ptr){
 
 		if (signal == PLAY) {
 			printf("got PLAY message\n");
-			GstServer::initPipeline(data->gstData);
-			GstServer::configurePipeline(data->gstData);	
+			/*GstServer::initPipeline(data->gstData);
 			GstServer::buildPipeline(data->gstData);
+			GstServer::configurePipeline(data->gstData);*/
 			GstServer::setPipelineToRun(data->gstData);
 			_beginthread(GstServer::waitForEosOrError, 0, (void *)data->gstData);
 		}
