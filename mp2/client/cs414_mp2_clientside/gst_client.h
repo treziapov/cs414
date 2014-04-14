@@ -8,6 +8,7 @@ typedef struct SinkData{
 	GstClockTime audioTSD;
 	GstClockTime ping;
 	int failures;
+	int successes;
 } SinkData;
 
 class GstData {
@@ -34,7 +35,7 @@ public:
 	static const gint VIDEO_PORT = 5000;
 	static const gint AUDIO_PORT = 5001;
 
-	static void initPipeline(GstData *data, int videoPort, int audioPort);
+	static void initPipeline(GstData *data, int videoPort, int audioPort, SinkData * sinkData);
 	static void buildPipeline(GstData *data);
 	static void setPipelineToRun(GstData *data);
 	static void waitForEosOrError(void *data);

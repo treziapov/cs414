@@ -12,8 +12,8 @@ void newVideoBuffer(GstElement * sink, GstData * data){
 	g_signal_emit_by_name(sink, "pull-buffer", &buffer);
 	if(buffer){
 		GstClockTime timestamp = GST_BUFFER_TIMESTAMP(buffer);
-		GstClockTime playTimestamp = gst_clock_get_time(gst_system_clock_obtain());
-		sinkData->videoTSD = GST_MSECOND * (playTimestamp - timestamp);
+		GstClockTime playTimestamp = gst_clock_get_time(gst_element_get_clock(sink));
+		sinkData->videoTSD = (playTimestamp - timestamp) / GST_MSECOND;
 	}
 }
 
@@ -23,8 +23,8 @@ void newAudioBuffer(GstElement * sink, GstData * data){
 	g_signal_emit_by_name(sink, "pull-buffer", &buffer);
 	if(buffer){
 		GstClockTime timestamp = GST_BUFFER_TIMESTAMP(buffer);
-		GstClockTime playTimestamp = gst_clock_get_time(gst_system_clock_obtain());
-		sinkData->audioTSD = GST_MSECOND * (playTimestamp - timestamp);
+		GstClockTime playTimestamp = gst_clock_get_time(gst_element_get_clock(sink));
+		sinkData->audioTSD = (playTimestamp - timestamp) / GST_MSECOND;
 	}
 }
 
@@ -34,9 +34,11 @@ void jitterBuffer(GstElement * sink, GstData * data){
 	g_signal_emit_by_name(sink, "pull-buffer", &buffer);
 	if(buffer){
 		GstClockTime timestamp = GST_BUFFER_TIMESTAMP(buffer);
-		GstClockTime decodeTimestamp = gst_clock_get_time(gst_system_clock_obtain());
-		sinkData->ping = GST_MSECOND * (decodeTimestamp - timestamp);
+		GstClockTime decodeTimestamp = gst_clock_get_time(gst_element_get_clock(sink));
+		sinkData->ping = (decodeTimestamp - timestamp) / GST_MSECOND;
 	}
+
+	sinkData->successes++;
 }
 
 gboolean jitterEventHandler(GstPad * pad, GstObject * parent, GstEvent * event){
@@ -44,8 +46,10 @@ gboolean jitterEventHandler(GstPad * pad, GstObject * parent, GstEvent * event){
 	return (gboolean)true;
 }
 
-void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
+void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkData * sinkData) {
 	gst_init (NULL, NULL);
+
+	globalData = sinkData;
 
 	data->videoUdpSource = gst_element_factory_make ("udpsrc", "videoUdpSource");
 	data->videoUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
@@ -87,6 +91,9 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
 	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
 
+	GstPad * appsrcPad = gst_element_get_static_pad(GST_ELEMENT(data->jitterBuffer), "src");
+	gst_pad_set_event_function(appsrcPad, (GstPadEventFunction)jitterEventHandler);
+
 	printf("Streaming video from port %d and audio from port %d\n", videoPort, audioPort);
 
 	if (!data->pipeline ||
@@ -97,13 +104,13 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort) {
 	}
 
 	g_object_set (data->videoAppSink, "emit-signals", TRUE, "caps", data->videoDecCaps, NULL);	
-	g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), data);
+	g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), globalData);
 
 	g_object_set (data->jitterAppSink, "emit-signals", TRUE, "caps", data->videoUdpCaps, NULL);	
-	g_signal_connect (data->jitterAppSink, "new-buffer", G_CALLBACK (jitterBuffer), data);
+	g_signal_connect (data->jitterAppSink, "new-buffer", G_CALLBACK (jitterBuffer), globalData);
 
 	g_object_set (data->audioAppSink, "emit-signals", true, "caps", data->audioDecCaps, NULL);	
-	g_signal_connect (data->audioAppSink, "new-buffer", G_CALLBACK (newAudioBuffer), data);
+	g_signal_connect (data->audioAppSink, "new-buffer", G_CALLBACK (newAudioBuffer), globalData);
 }
 
 void GstClient::buildPipeline(GstData *data) {
