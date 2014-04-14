@@ -17,7 +17,7 @@ public:
 	GstElement *pipeline;
 	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink, *videoQueue;
 	GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink, *audioQueue;
-	GstCaps *videoUdpCaps, *audioUdpCaps;
+	GstCaps *videoUdpCaps, *audioUdpCaps, *videoDecCaps, *audioDecCaps;
 	GstElement /**jitterBuffer,*/ *jitterTee, *jitterAppSink, *jitterQueue, *videoAppQueue;
 	GstElement *videoTee, *videoAppSink, *videoDecAppQueue, *videoDecQueue;
 	GstElement *audioTee, *audioAppSink, *audioAppQueue;

@@ -316,7 +316,6 @@ void handleConnection(void * ptr){
 		}else if(signal == STOP){
 			printf("got STOP message\n");
 			GstServer::stopPipeline(data->gstData);
-			removeClient(data->client->port);
 			endStream = true;
 		}else if(signal == PAUSE){
 			printf("got PAUSE message\n");

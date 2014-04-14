@@ -82,7 +82,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;C:\gstreamer-sdk\0.10\x86\lib\gstinterfaces-0.10.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;gstinterfaces-0.10.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/ENTRY:mainCRTStartup /libpath:C:/gtk/lib gtk-win32-2.0.lib gdk-win32-2.0.lib atk-1.0.lib gio-2.0.lib pangowin32-1.0.lib gdi32.lib pangocairo-1.0.lib gdk_pixbuf-2.0.lib pango-1.0.lib cairo.lib gobject-2.0.lib gmodule-2.0.lib gthread-2.0.lib glib-2.0.lib intl.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

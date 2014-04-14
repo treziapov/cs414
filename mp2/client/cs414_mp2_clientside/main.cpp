@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 	settingsData.resolution = R240;
 	connect(&settingsData);
 
-	gstData.mode = Active;
+	gstData.mode = ACTIVE;
 	GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort);
 	GstClient::buildPipeline(&gstData);
 
