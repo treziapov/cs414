@@ -2,6 +2,7 @@
 #define PASSIVE 2
 
 #include <pthread.h>
+#include <string.h>
 
 #include "gst_client.h"
 
