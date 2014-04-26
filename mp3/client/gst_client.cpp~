@@ -267,7 +267,7 @@ void GstClient::waitForEosOrError(void *voidData) {
 	}
 	gst_object_unref (bus);
 
-	pthread_exit(NULL);
+	pthread_exit();
 }
 
 void GstClient::stopAndFreeResources(GstData *data) {

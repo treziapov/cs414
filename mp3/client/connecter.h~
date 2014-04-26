@@ -40,22 +40,22 @@ void connect(Settings * settingsData);
 
 int startStream(Settings * settingsData);
 
-void stopStream();
+void stopStream(int port);
 
-void pauseStream();
+void pauseStream(int port);
 
-void resumeStream();
+void resumeStream(int port);
 
-void rewindStream();
+void rewindStream(int port);
 
-void fastforwardStream();
+void fastforwardStream(int port);
 
 int calculateBandwidth(Settings * settingsData);
 
 bool isEnoughBandwidth(Settings * settingsData);
 
-int switchMode(Settings * settingsData);
+int switchMode(Settings * settingsData, int port);
 
-int changeResources(Settings * settingsData);
+int changeResources(Settings * settingsData, int port);
 
-void sendServerSignal(int signal);
+void sendServerSignal(int signal, int port);
