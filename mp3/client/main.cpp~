@@ -60,7 +60,17 @@ void saveBandwidth(int bandwidth){
 
 //Gets the saved bandwidth from resource.txt
 int getBandwidth(){
-	FILE * myFile = fopen("resource.txt", "r");
+	char path[FILENAME_MAX];
+	if (!_getcwd(path, sizeof(path))) {
+		return errno;
+	}
+	printf ("getBandwidth(): Current directory: %s.\n", path);
+
+	char* resourceFile = 
+		GstClient::getFilePathInHomeDirectory(GstClient::projectDirectory, "resource.txt");
+	printf ("\t Looking for resource file at: %s.\n", resourceFile);
+
+	FILE * myFile = fopen(resourceFile, "r");
 	if (!myFile) {
 		printf("\t Couldn't open the resource file.\n");
 		saveBandwidth(1000000000);

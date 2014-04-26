@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "listener.h"
+
 Resources resource;
 
 void switchMode(ThreadData *data) {
