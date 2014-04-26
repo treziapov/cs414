@@ -315,7 +315,240 @@ gboolean refreshText(void * ptr){
 /* 
 	Set up initial UI 
 */
+
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
+{
+	GtkWidget *mainBoxBothServers;
+	mainBoxBothServers = gtk_hbox_new (FALSE, 0);
+	
+	GtkWidget *mainBoxServer1;			// Vbox, holds HBox and videoControls
+	GtkWidget *mainHBoxServer1;		// Hbox, holds video window and option box
+	GtkWidget *videoControlsServer1;	// Hbox, holds the buttons and the slider for video
+
+	GtkWidget *optionsServer1;			// Vbox, holds the settings options
+
+	// Video related buttons
+	GtkWidget *playVideoFile_button_server1, *pauseVideoFile_button_server1, *forwardVideoFile_button_server1, *rewindVideoFile_button_server1, *stopVideoFile_button_server1;
+	GtkWidget *updateBandwidth_button_server1, *updateVideo_button_server1;
+
+	char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
+	char stringHead[19] = "Current Bandwidth ";
+	sprintf(numstr, "%d", getBandwidth());
+	strcat(stringHead, numstr);
+
+	// Informational
+	GtkWidget *video_label_server1 = gtk_label_new("Video 1:");
+	//current_bandwidth = gtk_label_new(stringHead);
+	current_bandwidth_server1 = gtk_label_new("temp");
+	current_rate_server1 = gtk_label_new("Current Rate: 15");
+	sync_skew_server1 = gtk_label_new("Current synchronization skew: 0ms");
+	ping_server1 = gtk_label_new("Current end to end delay: 0ms");
+	failures_server1 = gtk_label_new("Packets lost: 0");
+
+	gtk_init(&argc, &argv);
+   
+	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(G_OBJECT(mainWindow), "delete-event", G_CALLBACK (gtkEnd_event), videoData);
+
+	videoWindowServer1 = gtk_drawing_area_new();
+	gtk_widget_set_double_buffered(videoWindowServer1, FALSE);
+	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
+
+	// Set up options
+	videoMode_option_server1 = gtk_combo_box_new_text();
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option_server1), "PASSIVE");
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option_server1), "ACTIVE");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(videoMode_option_server1), 0);
+	g_signal_connect(G_OBJECT(videoMode_option), "changed", G_CALLBACK(updateOptions), NULL);
+
+	videoResolution_option_server1 = gtk_combo_box_new_text();
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option_server1), "480p");
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option_server1), "240p");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option_server1), 0);
+	g_signal_connect(G_OBJECT(videoResolution_option), "changed", G_CALLBACK(updateResolution), NULL);
+
+	//char buffer[16];
+	videoRate_entry_server1 = gtk_entry_new();
+	bandwidth_entry_server1 = gtk_entry_new();
+	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData.rate, buffer, 10));
+	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData.bandwidth, buffer, 10));
+
+	playVideoFile_button_server1 = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
+	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
+	pauseVideoFile_button_server1 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_PAUSE);
+	g_signal_connect(G_OBJECT(pauseVideoFile_button), "clicked", G_CALLBACK(pauseVideo), NULL);
+	forwardVideoFile_button_server1 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
+	g_signal_connect(G_OBJECT(forwardVideoFile_button), "clicked", G_CALLBACK(fastForwardVideo), NULL);
+	rewindVideoFile_button_server1 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
+	g_signal_connect(G_OBJECT(rewindVideoFile_button), "clicked", G_CALLBACK(rewindVideo), NULL);
+	stopVideoFile_button_server1 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
+	g_signal_connect(G_OBJECT(stopVideoFile_button), "clicked", G_CALLBACK(stopVideo), NULL);
+
+	
+	updateBandwidth_button_server1 = gtk_button_new_with_label("Update Bandwidth ");
+	g_signal_connect(G_OBJECT(updateBandwidth_button), "clicked", G_CALLBACK(updateBandwidth), NULL);
+	updateVideo_button_server1 = gtk_button_new_with_label("Update Video 1 Stream");
+
+	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
+
+	// Layout
+	videoControlsServer1 = gtk_hbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), gtk_label_new("Play Video 1 File:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), playVideoFile_button_server1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), rewindVideoFile_button_server1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), pauseVideoFile_button_server1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), forwardVideoFile_button_server1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer1), stopVideoFile_button_server1, FALSE, FALSE, 2);
+
+	//Resolution, Mode, and Rate options
+	optionsServer1 = gtk_vbox_new(FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), gtk_label_new("Bandwith (B/s):"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), bandwidth_entry_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), updateBandwidth_button_server1, FALSE, FALSE, 2);
+
+	gtk_box_pack_start (GTK_BOX (optionsServer1), gtk_label_new("Mode:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), videoMode_option_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), gtk_label_new("Resolution:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), videoResolution_option_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), gtk_label_new("Rate:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), videoRate_entry_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), updateVideo_button_server1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), current_bandwidth_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), current_rate_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), sync_skew_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), ping_server1, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer1), failures_server1, FALSE, FALSE, 1);
+
+	mainHBoxServer1 = gtk_hbox_new(FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (mainHBoxServer1), videoWindowServer1, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (mainHBoxServer1), optionsServer1, FALSE, FALSE, 10);
+   
+	mainBoxServer1 = gtk_vbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (mainBoxServer1), mainHBoxServer1, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (mainBoxServer1), videoControlsServer1, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (mainBoxBothServers), mainBoxServer1, TRUE, TRUE, 0);
+	
+
+
+	//START VIDEO 2 CONTAINER
+	GtkWidget *mainBoxServer2;			// Vbox, holds HBox and videoControls
+	GtkWidget *mainHBoxServer2;		// Hbox, holds video window and option box
+	GtkWidget *videoControlsServer2;	// Hbox, holds the buttons and the slider for video
+
+	GtkWidget *optionsServer2;			// Vbox, holds the settings options
+
+	// Video related buttons
+	GtkWidget *playVideoFile_button_server2, *pauseVideoFile_button_server2, *forwardVideoFile_button_server2, *rewindVideoFile_button_server2, *stopVideoFile_button_server2;
+	GtkWidget  *updateVideo_button_server2;
+
+	char * numstr2 = new char[22]; // enough to hold all numbers up to 64-bits
+	char stringHead2[19] = "Current Bandwidth ";
+	sprintf(numstr2, "%d", getBandwidth());
+	strcat(stringHead2, numstr2);
+
+	// Informational
+	GtkWidget *video_label_server2 = gtk_label_new("Video 2:");
+	current_bandwidth = gtk_label_new(stringHead);
+	
+	current_rate_server2 = gtk_label_new("Current Rate: 15");
+	sync_skew_server2 = gtk_label_new("Current synchronization skew: 0ms");
+	ping_server2 = gtk_label_new("Current end to end delay: 0ms");
+	failures_server2 = gtk_label_new("Packets lost: 0");
+
+	gtk_init(&argc, &argv);
+   
+	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(G_OBJECT(mainWindow), "delete-event", G_CALLBACK (gtkEnd_event), videoData);
+
+	videoWindowServer2 = gtk_drawing_area_new();
+	gtk_widget_set_double_buffered(videoWindowServer2, FALSE);
+	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
+
+	// Set up options
+	videoMode_option_server2 = gtk_combo_box_new_text();
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option_server2), "PASSIVE");
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option_server2), "ACTIVE");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(videoMode_option_server2), 0);
+	g_signal_connect(G_OBJECT(videoMode_option), "changed", G_CALLBACK(updateOptions), NULL);
+
+	videoResolution_option_server2 = gtk_combo_box_new_text();
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option_server2), "480p");
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option_server2), "240p");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option_server2), 0);
+	g_signal_connect(G_OBJECT(videoResolution_option), "changed", G_CALLBACK(updateResolution), NULL);
+
+	//char buffer[16];
+	videoRate_entry_server2 = gtk_entry_new();
+	
+	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData.rate, buffer, 10));
+	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData.bandwidth, buffer, 10));
+
+	playVideoFile_button_server2 = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
+	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
+	pauseVideoFile_button_server2 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_PAUSE);
+	g_signal_connect(G_OBJECT(pauseVideoFile_button), "clicked", G_CALLBACK(pauseVideo), NULL);
+	forwardVideoFile_button_server2 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
+	g_signal_connect(G_OBJECT(forwardVideoFile_button), "clicked", G_CALLBACK(fastForwardVideo), NULL);
+	rewindVideoFile_button_server2 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
+	g_signal_connect(G_OBJECT(rewindVideoFile_button), "clicked", G_CALLBACK(rewindVideo), NULL);
+	stopVideoFile_button_server2 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
+	g_signal_connect(G_OBJECT(stopVideoFile_button), "clicked", G_CALLBACK(stopVideo), NULL);
+
+	
+	
+	g_signal_connect(G_OBJECT(updateBandwidth_button), "clicked", G_CALLBACK(updateBandwidth), NULL);
+	updateVideo_button_server2 = gtk_button_new_with_label("Update Video 2 Stream");
+
+	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
+
+	// Layout
+	videoControlsServer2 = gtk_hbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), gtk_label_new("Play Video 2 File:"), FALSE, FALSE, 20);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), playVideoFile_button_server2, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), rewindVideoFile_button_server2, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), pauseVideoFile_button_server2, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), forwardVideoFile_button_server2, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (videoControlsServer2), stopVideoFile_button_server2, FALSE, FALSE, 2);
+
+	//Resolution, Mode, and Rate options
+	optionsServer2 = gtk_vbox_new(FALSE, 0);
+	
+	
+	
+
+	gtk_box_pack_start (GTK_BOX (optionsServer2), gtk_label_new("Mode:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), videoMode_option_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), gtk_label_new("Resolution:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), videoResolution_option_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), gtk_label_new("Rate:"), FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), videoRate_entry_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), updateVideo_button_server2, FALSE, FALSE, 2);
+	
+	gtk_box_pack_start (GTK_BOX (optionsServer2), current_rate_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), sync_skew_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), ping_server2, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (optionsServer2), failures_server2, FALSE, FALSE, 1);
+
+	mainHBoxServer2 = gtk_hbox_new(FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (mainHBoxServer2), videoWindowServer2, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (mainHBoxServer2), optionsServer2, FALSE, FALSE, 10);
+   
+	mainBoxServer2 = gtk_vbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (mainBoxServer2), mainHBoxServer2, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (mainBoxServer2), videoControlsServer2, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (mainBoxBothServers), mainBoxServer2, TRUE, TRUE, 0);
+	gtk_container_add (GTK_CONTAINER (mainWindow), mainBoxBothServers);
+	
+
+	gtk_window_set_default_size (GTK_WINDOW (mainWindow), 1500, 500);
+    
+	gtk_widget_show_all (mainWindow);
+	//GTK_DIALOG_DESTROY_WITH_PARENT
+	gtk_widget_realize(videoWindowServer1);
+
+	g_timeout_add(500, refreshText, NULL);
+}
+/*void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
 	GtkWidget *mainHBox;		// Hbox, holds video window and option box
@@ -428,7 +661,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_widget_realize(videoWindow);
 
 	g_timeout_add(500, refreshText, NULL);
-}
+}*/
 
 /*
 	Main Method
