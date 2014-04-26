@@ -57,7 +57,7 @@ void setVideoWindow_event(GtkWidget *widget)
 
 	// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
 	//gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
-	gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData.videoSink), window_handle);
+	//gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData.videoSink), window_handle);
 }
 
 
@@ -284,7 +284,8 @@ void updateVideo(GtkWidget *widget, gpointer data){
 		//don't need to check or set rate. Rate is set to 10 at switch
 		int retval = changeResources(&settingsData);
 		if(retval == CONNECTION_ERROR){
-			//report connection error
+			//r
+eport connection error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
                                              GTK_DIALOG_DESTROY_WITH_PARENT ,
                                              GTK_MESSAGE_ERROR,
@@ -328,7 +329,7 @@ gboolean refreshText(void * ptr){
 /* 
 	Set up initial UI 
 */
-
+/*
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *mainBoxBothServers;
@@ -403,6 +404,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	updateVideo_button_server1 = gtk_button_new_with_label("Update Video 1 Stream");
 
 	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
+
 
 	// Layout
 	videoControlsServer1 = gtk_hbox_new (FALSE, 0);
@@ -561,7 +563,9 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	g_timeout_add(500, refreshText, NULL);
 }
-/*void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
+*/
+
+void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
 	GtkWidget *mainHBox;		// Hbox, holds video window and option box
@@ -592,7 +596,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	videoWindow = gtk_drawing_area_new();
 	gtk_widget_set_double_buffered(videoWindow, FALSE);
-	//g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
+	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
 
 	// Set up options
 	videoMode_option = gtk_combo_box_new_text();
@@ -607,11 +611,13 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 0);
 	g_signal_connect(G_OBJECT(videoResolution_option), "changed", G_CALLBACK(updateResolution), NULL);
 
-	char buffer[16];
+	char buffer[48];
 	videoRate_entry = gtk_entry_new();
 	bandwidth_entry = gtk_entry_new();
-	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData.rate, buffer, 10));
-	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData.bandwidth, buffer, 10));
+	sprintf(buffer, "%d", settingsData.rate);
+	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), buffer);
+	sprintf(buffer, "%d", settingsData.bandwidth);
+	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), buffer);
 
 	playVideoFile_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
@@ -674,7 +680,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_widget_realize(videoWindow);
 
 	g_timeout_add(500, refreshText, NULL);
-}*/
+}
 
 /*
 	Main Method
