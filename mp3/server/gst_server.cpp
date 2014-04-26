@@ -119,10 +119,10 @@ void GstServer::initPipeline(GstData *data) {
 void GstServer::configurePipeline(GstData *data) {
 	gchar *videoFilePath;
 	if (data->resolution == R240) {
-		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName240p);
+		videoFilePath = (gchar *)"mjpeg_320x240.avi";
 	}
 	else {
-		videoFilePath = getFilePathInHomeDirectory (videoDirectory, videoName480p);
+		videoFilePath = (gchar *)"mjpeg_640x480.avi";
 	}
 
 	GstCaps *videoRateCaps = gst_caps_new_simple (

@@ -34,9 +34,6 @@ int getBandwidth(){
 }
 
 int main(int argc, char *argv[]){
-	(void)argv;
-	(void)argc;
-
 	int bandwidth = getBandwidth();
 	printf("server bandwidth: %d.\n", bandwidth);
 
