@@ -18,7 +18,7 @@ int getBandwidth(){
 		printf("\t Couldn't open the resource file.\n");
 		saveBandwidth(1000000000);
 		fclose(myFile);
-		myFile = fopen("resource.txt", "r");
+		myFile = fopen(resourceFile, "r");
 	}
 
 	fseek(myFile, 0, SEEK_END);
