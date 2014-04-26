@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <string.h>
+#include <stdlib.h>
 
 #include "gst_server.h"
 

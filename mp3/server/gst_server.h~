@@ -42,7 +42,7 @@ class GstServer {
 		static void setPipelineToRun(GstData *data);
 		static void stopAndFreeResources(GstData *data);
 
-		static void * waitForEosOrError(void *data);
+		static void waitForEosOrError(void *data);
 
 		static void playPipeline(GstData *data);
 		static void stopPipeline(GstData *data);
