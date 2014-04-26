@@ -20,7 +20,7 @@ main.o: listener.o gst_server.o main.cpp
 	$(CC) $(CC_OPTS) -c main.cpp $(GST)
 	
 streamer: listener.o gst_server.o main.o
-	$(LINKER) connecter.o gst_server.o main.o -o streamer $(GST)
+	$(LINKER) listener.o gst_server.o main.o -o streamer $(GST)
 
 clean:
 	rm -f $(CODE_CLEAN)

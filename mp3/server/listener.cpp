@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <pthread.h>
 #include <netdb.h>
@@ -10,6 +11,11 @@
 #include "listener.h"
 
 Resources resource;
+
+char * itoa(int text, char * buffer){
+	sprintf(buffer, "%d", text);
+	return buffer;
+}
 
 void switchMode(ThreadData *data) {
 	if (data->mode == ACTIVE) {
@@ -73,6 +79,8 @@ int findClientBandwidth(int port){
 			return resource.clients[i]->bandwidth;
 		}
 	}
+	
+	return -1;
 }
 
 void updateClientBandwidth(int port, int newBandwidth){
@@ -90,10 +98,12 @@ Client * findClient(int port){
 			return resource.clients[i];
 		}
 	}
+	
+	return NULL;
 }
 
 void init_listener(int totalBandwidth){
-	int base_port = 6000;
+	int basePort = 6000;
 
 	resource.totalBandwidth = totalBandwidth;
 	resource.remainingBandwidth = totalBandwidth;
@@ -112,7 +122,7 @@ void init_listener(int totalBandwidth){
 	
 	char buffer[512];
 	
-	int err = getaddrinfo(NULL, itoa(base_port, buffer, 10), &hints, &result);
+	int err = getaddrinfo(NULL, itoa(basePort, buffer), &hints, &result);
 	if(err != 0){
 		printf("getaddrinfo failed\n");
 		return;
@@ -147,7 +157,11 @@ void init_listener(int totalBandwidth){
 			return;
 		}
 		
-		char * clientIp = inet_ntoa(client_info.sin_addr);
+		struct sockaddr_in *sin = (struct sockaddr_in *)&client_info;
+		unsigned char * ip = (unsigned char *)&sin->sin_addr.s_addr;
+		char * clientIp = (char *)malloc(512);
+		sprintf(clientIp, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+		printf("cientIP: %s\n", clientIp);
 		
 		printf("connected client on: %s\n", clientIp);
 		
@@ -160,7 +174,7 @@ void init_listener(int totalBandwidth){
 		if(clientBandwidth == -1){
 			int signal = REJECT;
 			send(sock_client, (char *)&signal, sizeof(int), 0);
-			closesocket(sock_client);
+			close(sock_client);
 			printf("client rejected, not enough bandwidth\n");
 		}else{
 			Client * currentClient = createClient(resource, clientBandwidth, currentPort);
@@ -191,7 +205,7 @@ void init_listener(int totalBandwidth){
 			hints.ai_socktype = SOCK_STREAM;
 			hints.ai_flags = AI_PASSIVE;
 			
-			err = getaddrinfo(NULL, itoa(currentPort, buffer, 10), &hints, &result);
+			err = getaddrinfo(NULL, itoa(currentPort, buffer), &hints, &result);
 			if(err != 0){
 				printf("getaddrinfo failed\n");
 				return;
@@ -216,7 +230,7 @@ void init_listener(int totalBandwidth){
 			send(sock_client, (char *)&audioPort, sizeof(int), 0);
 			
 			data->ClientSocket = accept(new_client_socket, NULL, NULL);
-			closesocket(new_client_socket);
+			close(new_client_socket);
 			
 			pthread_t thread;
 			pthread_create(&thread, NULL, handleConnection, (void *)data);
@@ -224,7 +238,7 @@ void init_listener(int totalBandwidth){
 			currentPort++;
 			videoPort++;
 			audioPort++;
-			closesocket(sock_client);
+			close(sock_client);
 		}
 	}
 }
@@ -255,21 +269,21 @@ int calculateResources(Resources rsc, Request req){
 	return clientBandwidth;
 }
 
-Client * createClient(Resources & resource, int clientBandwidth, int clientPort){
+Client * createClient(Resources & resources, int clientBandwidth, int clientPort){
 	Client * newClient = new Client();
 	newClient->bandwidth = clientBandwidth;
 	newClient->port = clientPort;
 	
-	resource.remainingBandwidth -= clientBandwidth;
+	resources.remainingBandwidth -= clientBandwidth;
 	return addClient(newClient);
 }
 
-void handleConnection(void * ptr){
+void * handleConnection(void * ptr){
 	ThreadData * data = (ThreadData *)ptr;
 	
-	int videoRate = data->rate;
-	int videoResolution = data->resolution;
-	int streamMode = data->mode;
+	//int videoRate = data->rate;
+	//int videoResolution = data->resolution;
+	//int streamMode = data->mode;
 	int port = data->port;
 	data->gstData->resolution = (Resolution)data->resolution;
 	data->gstData->videoFrameRate = data->rate;
@@ -300,10 +314,10 @@ void handleConnection(void * ptr){
 			
 			int oldBandwidth = findClientBandwidth(port);
 			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
-				int signal = ACCEPT;
+				signal = ACCEPT;
 				send(sock_client, (char *)&signal, sizeof(int), 0);
 				
-				resource.reaminingBandwidth -= newBandwidth - oldBandwidth;
+				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
 				updateClientBandwidth(port, newBandwidth);
 				
 				switchMode(data);
@@ -313,7 +327,7 @@ void handleConnection(void * ptr){
 				GstServer::configurePipeline(data->gstData);
 				GstServer::playPipeline(data->gstData);
 			}else{
-				int signal = REJECt;
+				signal = REJECT;
 				send(sock_client, (char *)&signal, sizeof(int), 0);
 				endStream = true;
 			}
@@ -327,14 +341,14 @@ void handleConnection(void * ptr){
 			
 			int oldBandwidth = findClientBandwidth(port);
 			if(resource.remainingBandwidth - (newBandwidth - oldBandwidth) > 0){
-				int signal = ACCEPT;
+				signal = ACCEPT;
 				send(sock_client, (char *)&signal, sizeof(int), 0);
 				
 				resource.remainingBandwidth -= newBandwidth - oldBandwidth;
 				
 				updateClientBandwidth(port, newBandwidth);
 			}else{
-				int signal = REJECT;
+				signal = REJECT;
 				send(sock_client, (char *)&signal, sizeof(int), 0);
 				
 				endStream = false;
@@ -343,7 +357,7 @@ void handleConnection(void * ptr){
 	}
 	
 	GstServer::stopAndFreeResources(data->gstData);
-	closesocket(sock_client);
+	close(sock_client);
 	removeClient(port);
 	pthread_exit(NULL);
 }

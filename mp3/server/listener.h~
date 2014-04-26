@@ -1,5 +1,4 @@
 //#include <vector>
-#include <WinSock2.h>
 
 #include "gst_server.h"
 
@@ -51,7 +50,7 @@ typedef struct ThreadData{
 	int resolution;
 	int mode;
 	int rate;
-	SOCKET ClientSocket;
+	int ClientSocket;
 	Client *client;
 	GstData *gstData;
 } ThreadData;
