@@ -1,11 +1,17 @@
-#include <gtk-2.0/gtk/gtk.h>
-#include <gst/gst.h>
-#include <gst/interfaces/xoverlay.h>
-#include <gdk/gdkwin32.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <process.h>
+#include <gtk-2.0/gtk/gtk.h>
+#include <gst/gst.h>
+#include <gst/interfaces/xoverlay.h>
+#include <gdk/gdk.h>
+#if defined (GDK_WINDOWING_X11)
+#include <gdk/gdkx.h>
+#elif defined (GDK_WINDOWING_WIN32)
+#include <gdk/gdkwin32.h>
+#elif defined (GDK_WINDOWING_QUARTZ)
+#include <gdk/gdkquartz.h>
+#endif
 
 #include "connecter.h"
 #include "gst_client.h"
@@ -16,7 +22,7 @@ GtkWidget *videoMode_option, *videoResolution_option;
 GtkWidget *bandwidth_entry, *videoRate_entry;
 GtkWidget *current_bandwidth;
 GtkWidget *current_rate;
-GtkWidget *sync, *ping, *failures;
+GtkWidget *syncWidget, *ping, *failures;
 
 Mode mode;
 bool started = 0;
@@ -32,19 +38,26 @@ SinkData sinkData;
 */
 void setVideoWindow_event(GtkWidget *widget) 
 {
-	GdkWindow *mainWindow = gtk_widget_get_window(widget);
+	GdkWindow *window = gtk_widget_get_window(widget);
 	guintptr window_handle;
 	
-	if (!gdk_window_ensure_native(mainWindow))
+	if (!gdk_window_ensure_native(window))
 	{
 		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
 	}	
 
-	// Retrieve mainWindow handler from GDK
-	window_handle = (guintptr)GDK_WINDOW_HWND(mainWindow);
+	// Retrieve mainWindow handler from 
+	#if defined (GDK_WINDOWING_WIN32)
+		window_handle = (guintptr)GDK_WINDOW_HWND (window);
+	#elif defined (GDK_WINDOWING_QUARTZ)
+	  	window_handle = gdk_quartz_window_get_nsview (window);
+	#elif defined (GDK_WINDOWING_X11)
+	  	window_handle = GDK_WINDOW_XID (window);
+	#endif
 
 	// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
-	gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
+	//gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
+	gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData.videoSink), window_handle);
 }
 
 
@@ -55,7 +68,7 @@ void saveBandwidth(int bandwidth){
 	fprintf (myFile, "%d\0", bandwidth);
 	fclose(myFile);
 
-	printf ("saveBandwidth(): Saved bandwidth at: %s.\n", resourceFile);
+	printf ("saveBandwidth(): Saved bandwidth at: resource.txt.\n");
 }
 
 //Gets the saved bandwidth from resource.txt
@@ -65,7 +78,7 @@ int getBandwidth(){
 		printf("\t Couldn't open the resource file.\n");
 		saveBandwidth(1000000000);
 		fclose(myFile);
-		myFile = fopen(resourceFile, "r");
+		myFile = fopen("resource.txt", "r");
 	}
 
 	fseek(myFile, 0, SEEK_END);
@@ -301,7 +314,7 @@ gboolean refreshText(void * ptr){
 	if(active){
 		GstClockTime skew = abs(sinkData.videoTSD - sinkData.audioTSD);
 		sprintf(buffer, "Current skew: %dms", skew);
-		gtk_label_set_text(GTK_LABEL(sync), buffer);
+		gtk_label_set_text(GTK_LABEL(syncWidget), buffer);
 	}
 	sprintf(buffer, "Current end to end delay: %dms", sinkData.ping);
 	gtk_label_set_text(GTK_LABEL(ping), buffer);
@@ -568,7 +581,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	GtkWidget *video_label = gtk_label_new("Video:");
 	current_bandwidth = gtk_label_new(stringHead);
 	current_rate = gtk_label_new("Current Rate: 15");
-	sync = gtk_label_new("Current synchronization skew: 0ms");
+	syncWidget = gtk_label_new("Current synchronization skew: 0ms");
 	ping = gtk_label_new("Current end to end delay: 0ms");
 	failures = gtk_label_new("Packets lost: 0");
 	
@@ -642,7 +655,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (options), updateVideo_button, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (options), current_bandwidth, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), current_rate, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), sync, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (options), syncWidget, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), ping, FALSE, FALSE, 1);
 	gtk_box_pack_start (GTK_BOX (options), failures, FALSE, FALSE, 1);
 
