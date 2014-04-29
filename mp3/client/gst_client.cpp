@@ -91,7 +91,7 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	data->videoDecQueue = gst_element_factory_make("queue", "videoDecQueue");
 	data->videoDecAppQueue = gst_element_factory_make("queue", "videoDecAppQueue");
 
-	data->videoSink = gst_element_factory_make ("d3dvideosink", "videoSink");
+	data->videoSink = gst_element_factory_make ("xvimagesink", "videoSink");
 	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
 
 	data->audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
@@ -126,12 +126,50 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
 		data->clientIp, videoPort, audioPort);
 
-	if (!data->pipeline ||
-		!data->videoUdpSource || !data->videoUdpCaps || !data->videoRtpDepay || !data->videoDecoder || !data->videoSink || !data->videoQueue || !data->videoAppSink || !data->videoAppQueue || !data->videoDecQueue || !data->videoDecAppQueue ||
-		!data->audioUdpSource || !data->audioUdpCaps || !data->audioRtpDepay || !data->audioDecoder || !data->audioSink || !data->audioAppSink || !data-> audioAppQueue || 
-		!data->jitterBuffer || !data->jitterTee || !data->jitterAppSink || !data->jitterQueue) {
-			g_printerr ("Not all elements could be created.\n");
-	}
+	if (!data->pipeline)
+        g_printerr("Could not create pipeline");
+    if(!data->videoUdpSource)
+        g_printerr("Could not create videoUdpSource");
+    if(!data->videoUdpCaps)
+        g_printerr("Could not create videoUdpCaps");
+    if(!data->videoRtpDepay)
+        g_printerr("Could not create videoRtpDepay");
+    if(!data->videoDecoder)
+        g_printerr("Could not create videoDecoder");
+    if(!data->videoSink)
+        g_printerr("Could not create videoSink");
+    if(!data->videoQueue)
+        g_printerr("Could not create videoQueue");
+    if(!data->videoAppSink)
+        g_printerr("Could not create videoAppSink");
+    if(!data->videoAppQueue)
+        g_printerr("Could not create videoAppQueue");
+    if(!data->videoDecQueue)
+        g_printerr("Could not create videoDecQueue");
+    if(!data->videoDecAppQueue)
+        g_printerr("Could not create videoDecAppQueue");
+    if(!data->audioUdpSource)
+        g_printerr("Could not create audioUdpSource");
+    if(!data->audioUdpCaps)
+        g_printerr("Could not create audioUdpCaps");
+    if(!data->audioRtpDepay)
+        g_printerr("Could not create audioRtpDepay");
+    if(!data->audioDecoder)
+        g_printerr("Could not create audioDecoder");
+    if(!data->audioSink)
+        g_printerr("Could not create audioSink");
+    if(!data->audioAppSink)
+        g_printerr("Could not create audioAppSink");
+    if(!data-> audioAppQueue)
+        g_printerr("Could not create audioAppQueue");
+	if(!data->jitterBuffer)
+        g_printerr("Could not create jitterBuffer");
+    if(!data->jitterTee)
+        g_printerr("Could not create jitterTee");
+    if(!data->jitterAppSink)
+        g_printerr("Could not create jitterAppSink");
+    if(!data->jitterQueue)
+        g_printerr("Could not create jitterQueue");
 
 	g_object_set (data->videoAppSink, "emit-signals", TRUE, "caps", data->videoDecCaps, NULL);	
 	g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), globalData);
