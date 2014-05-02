@@ -10,16 +10,16 @@
 
 #include "connecter.h"
 
-int ServerSocket;
-int messagePort;
+//int ServerSocket;
+//int messagePort;
 
-void sendServerSignal(int signal) {
+void sendServerSignal(int signal, int ServerSocket) {
 	send(ServerSocket, (char*)&signal, sizeof(int), 0); 
 }
 
 void connect(Settings * settingsData){
 	int ConnectSocket = 0;
-	ServerSocket = 0;
+	settingsData->ServerSocket = 0;
 	struct addrinfo * result = NULL;
 	struct addrinfo hints;
 
@@ -50,7 +50,7 @@ void connect(Settings * settingsData){
 		recv(ConnectSocket, (char *)&settingsData->messagePort, sizeof(int), 0);
 		recv(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
 		recv(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
-		messagePort = settingsData->messagePort;
+		//settmessagePort = settingsData->messagePort;
 		
 		char buffer[512];
 		sprintf(buffer, "%d", settingsData->messagePort);
@@ -69,9 +69,9 @@ void connect(Settings * settingsData){
 		
 		close(ConnectSocket);
 
-		ServerSocket = newConnectSocket;
+		settingsData->ServerSocket = newConnectSocket;
 	}else{
-		ServerSocket = -1;
+		settingsData->ServerSocket = -1;
 	}
 }
 
@@ -102,12 +102,12 @@ bool isEnoughBandwidth(Settings * settingsData){
 }
 
 int startStream(Settings * settingsData){
-	if(ServerSocket != -1){
+	if(settingsData->ServerSocket != -1){
 		if(isEnoughBandwidth(settingsData)){
 			connect(settingsData);
 			
-			if(ServerSocket == -1){
-				ServerSocket = 0;
+			if(settingsData->ServerSocket == -1){
+				settingsData->ServerSocket = 0;
 				return CONNECTION_ERROR;
 			}else{
 			}
@@ -115,30 +115,30 @@ int startStream(Settings * settingsData){
 			return RESOURCES_ERROR;
 		}
 	}
-	sendServerSignal(PLAY);
+	sendServerSignal(PLAY, settingsData->ServerSocket);
 	return 0;
 }
 
-void stopStream(){
-	sendServerSignal(STOP);
-	close(ServerSocket);
+void stopStream(Settings * settingsData){
+	sendServerSignal(STOP, settingsData->ServerSocket);
+	close(settingsData->ServerSocket);
 	//ServerSocket = INVALID_SOCKET;
 }
 
-void pauseStream(){
-	sendServerSignal(PAUSE);
+void pauseStream(Settings * settingsData){
+	sendServerSignal(PAUSE, settingsData->ServerSocket);
 }
 
-void resumeStream(){
-	sendServerSignal(RESUME);
+void resumeStream(Settings * settingsData){
+	sendServerSignal(RESUME, settingsData->ServerSocket);
 }
 
-void rewindStream(){
-	sendServerSignal(REWIND);
+void rewindStream(Settings * settingsData){
+	sendServerSignal(REWIND, settingsData->ServerSocket);
 }
 
-void fastforwardStream(){
-	sendServerSignal(FAST_FORWARD);
+void fastforwardStream(Settings * settingsData){
+	sendServerSignal(FAST_FORWARD, settingsData->ServerSocket);
 }
 
 int calculateBandwidth(Settings * settingsData){
@@ -166,25 +166,25 @@ int switchMode(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = SWITCH_MODE;
-		send(ServerSocket, (char *)&signal, sizeof(int), 0);
+		send(settingsData->ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		int newBandwidth = calculateBandwidth(settingsData);
-		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
+		send(settingsData->ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
 
-		recv(ServerSocket, (char *)&signal, sizeof(int), 0);
+		recv(settingsData->ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		if(signal == ACCEPT){
 			//The server has enough bandwidth, continue streaming
 			return 0;
 		}else{
 			//The server does not have enough bandwidth, stop streaming
-			stopStream();
+			stopStream(settingsData);
 
 			return CONNECTION_ERROR;
 		}
 	}else{
 		//You do not have enough bandwidth, stop streaming
-		stopStream();
+		stopStream(settingsData);
 
 		return RESOURCES_ERROR;
 	}
@@ -195,25 +195,25 @@ int changeResources(Settings * settingsData){
 	if(isEnoughBandwidth(settingsData)){
 		//Check if the server has enough bandwidth for the stream
 		int signal = NEW_RESOURCES;
-		send(ServerSocket, (char *)&signal, sizeof(int), 0);
+		send(settingsData->ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		int newBandwidth = calculateBandwidth(settingsData);
-		send(ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
+		send(settingsData->ServerSocket, (char *)&newBandwidth, sizeof(int), 0);
 
-		recv(ServerSocket, (char *)&signal, sizeof(int), 0);
+		recv(settingsData->ServerSocket, (char *)&signal, sizeof(int), 0);
 
 		if(signal == ACCEPT){
 			//The server has enough bandwidth, continue streaming
 			return 0;
 		}else{
 			//The server does not have enough bandwidth, stop streaming
-			stopStream();
+			stopStream(settingsData);
 
 			return CONNECTION_ERROR;
 		}
 	}else{
 		//You do not have enough bandwidth, stop streaming
-		stopStream();
+		stopStream(settingsData);
 
 		return RESOURCES_ERROR;
 	}

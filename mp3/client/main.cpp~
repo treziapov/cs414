@@ -17,12 +17,18 @@
 #include "gst_client.h"
 
 GtkWidget *mainWindow;
-GtkWidget *videoWindow;
-GtkWidget *videoMode_option, *videoResolution_option;
-GtkWidget *bandwidth_entry, *videoRate_entry;
-GtkWidget *current_bandwidth;
-GtkWidget *current_rate;
-GtkWidget *syncWidget, *ping, *failures;
+GtkWidget *videoWindow_server1;
+GtkWidget *videoWindow_server2;
+GtkWidget *videoMode_option_server1, *videoResolution_option_server1;
+GtkWidget *videoMode_option_server2, *videoResolution_option_server2;
+GtkWidget *bandwidth_entry_server1, *videoRate_entry_server1;
+GtkWidget *bandwidth_entry_server2, *videoRate_entry_server2;
+GtkWidget *current_bandwidth_server1;
+GtkWidget *current_bandwidth_server2;
+GtkWidget *current_rate_server1;
+GtkWidget *current_rate_server2;
+GtkWidget *sync_skew_server1, *ping_server1, *failures_server1;
+GtkWidget *sync_skew_server2, *ping_server2, *failures_server2;
 
 Mode mode;
 bool started = 0;
@@ -65,7 +71,7 @@ void setVideoWindow_event(GtkWidget *widget)
 void saveBandwidth(int bandwidth){
 	FILE * myFile;
 	myFile = fopen("resource.txt", "w+");
-	fprintf (myFile, "%d\0", bandwidth);
+	fprintf (myFile, "%d", bandwidth);
 	fclose(myFile);
 
 	printf ("saveBandwidth(): Saved bandwidth at: resource.txt.\n");

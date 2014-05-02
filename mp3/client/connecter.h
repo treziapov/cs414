@@ -34,21 +34,22 @@ typedef struct Settings{
 	int messagePort;
 	int videoPort;
 	int audioPort;
+	int ServerSocket;
 } Settings;
 
 void connect(Settings * settingsData);
 
 int startStream(Settings * settingsData);
 
-void stopStream();
+void stopStream(Settings * settingsData);
 
-void pauseStream();
+void pauseStream(Settings * settingsData);
 
-void resumeStream();
+void resumeStream(Settings * settingsData);
 
-void rewindStream();
+void rewindStream(Settings * settingsData);
 
-void fastforwardStream();
+void fastforwardStream(Settings * settingsData);
 
 int calculateBandwidth(Settings * settingsData);
 
