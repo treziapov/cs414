@@ -46,7 +46,7 @@ void setVideoWindow_event(GtkWidget *widget)
 		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
 	}	
 
-	// Retrieve mainWindow handler from 
+	// Retrieve mainWindow handler from GDK
 	#if defined (GDK_WINDOWING_WIN32)
 		window_handle = (guintptr)GDK_WINDOW_HWND (window);
 	#elif defined (GDK_WINDOWING_QUARTZ)
@@ -284,8 +284,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 		//don't need to check or set rate. Rate is set to 10 at switch
 		int retval = changeResources(&settingsData);
 		if(retval == CONNECTION_ERROR){
-			//r
-eport connection error
+			//report connection error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
                                              GTK_DIALOG_DESTROY_WITH_PARENT ,
                                              GTK_MESSAGE_ERROR,

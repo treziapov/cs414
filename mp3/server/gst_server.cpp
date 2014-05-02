@@ -141,7 +141,9 @@ void GstServer::configurePipeline(GstData *data) {
 	g_print ("configurePipeline: streaming file '%s' to %s, on ports %d and %d.\n", 
 		videoFilePath, data->clientIp, data->videoPort, data->audioPort);
 
-	delete videoFilePath;
+	
+	//delete videoFilePath;
+	
 }
 
 void GstServer::buildPipeline(GstData *data) {

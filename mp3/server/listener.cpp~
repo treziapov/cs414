@@ -79,6 +79,8 @@ int findClientBandwidth(int port){
 			return resource.clients[i]->bandwidth;
 		}
 	}
+	
+	return -1;
 }
 
 void updateClientBandwidth(int port, int newBandwidth){
@@ -143,18 +145,23 @@ void init_listener(int totalBandwidth){
 	int videoPort = basePort + 200;
 	int audioPort = basePort + 300;
 	
+	
 	while(true){
-		struct sockaddr_storage client_info;
-		socklen_t addr_size;
 		
+		struct sockaddr_storage client_info;
+		//struct sockaddr_in client_info;
+		//memset(&client_info,0,sizeof(client_info));
+		socklen_t addr_size;
+		//addr_size = sizeof(client_info);
 		printf("Waiting for a connection\n");
 		
 		sock_client = accept(sock_listener, (struct sockaddr *)&client_info, &addr_size);
+		
 		if(sock_client == -1){
 			printf("accept failed\n");
 			return;
 		}
-		
+		printf("test1\n");
 		struct sockaddr_in *sin = (struct sockaddr_in *)&client_info;
 		unsigned char * ip = (unsigned char *)&sin->sin_addr.s_addr;
 		char * clientIp = (char *)malloc(512);
@@ -237,7 +244,9 @@ void init_listener(int totalBandwidth){
 			videoPort++;
 			audioPort++;
 			close(sock_client);
+			printf("test2\n");
 		}
+		
 	}
 }
 

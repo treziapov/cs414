@@ -92,6 +92,8 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	data->videoDecAppQueue = gst_element_factory_make("queue", "videoDecAppQueue");
 
 	data->videoSink = gst_element_factory_make ("xvimagesink", "videoSink");
+	//data->videoSink = gst_element_factory_make ("autovideosink", "videoSink");
+	
 	data->videoQueue = gst_element_factory_make ("queue", "videoQueue");
 
 	data->audioUdpSource = gst_element_factory_make("udpsrc", "audioUdpSource");
@@ -126,6 +128,8 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
 		data->clientIp, videoPort, audioPort);
 
+
+	
 	if (!data->pipeline)
         g_printerr("Could not create pipeline");
     if(!data->videoUdpSource)
@@ -263,6 +267,7 @@ void GstClient::buildPipeline(GstData *data) {
 	if(!gst_element_link (data->videoDecQueue, data->videoSink)) {
 		g_printerr("Couldn't link: videoDecQueue - videoDecoder.\n");
 	}
+	
 }
 
 void GstClient::setPipelineToRun(GstData *data) {

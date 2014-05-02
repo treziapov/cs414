@@ -46,7 +46,7 @@ void setVideoWindow_event(GtkWidget *widget)
 		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
 	}	
 
-	// Retrieve mainWindow handler from 
+	// Retrieve mainWindow handler from GDK
 	#if defined (GDK_WINDOWING_WIN32)
 		window_handle = (guintptr)GDK_WINDOW_HWND (window);
 	#elif defined (GDK_WINDOWING_QUARTZ)
@@ -168,7 +168,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 		GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
 		GstClient::buildPipeline(&gstData);
 		GstClient::setPipelineToRun(&gstData);
-		setVideoWindow_event(videoWindow);
+		//setVideoWindow_event(videoWindow);
 
 		if(retval == 0){
 			started=1;
@@ -403,6 +403,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	updateVideo_button_server1 = gtk_button_new_with_label("Update Video 1 Stream");
 
 	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
+
 
 	// Layout
 	videoControlsServer1 = gtk_hbox_new (FALSE, 0);

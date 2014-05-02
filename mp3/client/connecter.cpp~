@@ -54,7 +54,7 @@ void connect(Settings * settingsData){
 		
 		char buffer[512];
 		sprintf(buffer, "%d", settingsData->messagePort);
-		getaddrinfo(settingsData->ip, itoa(settingsData->messagePort, buffer, 10), &hints, &result);
+		getaddrinfo(settingsData->ip, buffer, &hints, &result);
 		
 		int newConnectSocket;
 		for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){

@@ -108,6 +108,7 @@ int startStream(Settings * settingsData){
 			
 			if(ServerSocket == -1){
 				ServerSocket = 0;
+				printf("Connection Error\n");
 				return CONNECTION_ERROR;
 			}else{
 			}

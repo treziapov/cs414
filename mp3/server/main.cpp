@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 	if (bandwidth == -1) {
 		return -1;
 	}
-
+	
 	init_listener(bandwidth);
 	//GstData gstData;
 	//gstData.clientIp = "localhost";
