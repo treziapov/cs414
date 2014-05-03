@@ -106,6 +106,7 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	data->audioTee = gst_element_factory_make("tee", "audioTee");
 	data->audioAppSink = gst_element_factory_make("appsink", "audioAppSink");
 	data->audioAppQueue = gst_element_factory_make("queue", "audioAppQueue");
+    data->audioVolume = gst_element_factory_make("volume", "volume");
 
 	data->jitterTee = gst_element_factory_make("tee", "jitterTee");
 	data->jitterQueue = gst_element_factory_make("queue", "jitterQueue");
@@ -166,6 +167,8 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
         g_printerr("Could not create audioAppSink");
     if(!data-> audioAppQueue)
         g_printerr("Could not create audioAppQueue");
+    if(!data-> audioVolume)
+        g_printerr("Could not create audioVolume");
 	if(!data->jitterBuffer)
         g_printerr("Could not create jitterBuffer");
     if(!data->jitterTee)
@@ -201,7 +204,7 @@ void GstClient::buildPipeline(GstData *data) {
 			data->jitterAppSink, data->videoRtpDepay, data->videoDecoder, data->videoTee, data->videoDecQueue, 
 			data->videoDecAppQueue, data->videoAppSink, data->videoColorspace, data->videoSink, 
 			data->audioUdpSource, data->audioRtpDepay, data->audioDecoder, data->audioTee,
-			data->audioAppQueue, data->audioAppSink, data->audioQueue, data->audioSink, NULL);
+			data->audioAppQueue, data->audioAppSink, data->audioQueue, data->audioVolume, data->audioSink, NULL);
 
 		//This is the AUDIO pipeline with tees and sinks	
 		if (!gst_element_link (data->audioUdpSource, data->audioRtpDepay)) {
@@ -222,8 +225,11 @@ void GstClient::buildPipeline(GstData *data) {
 		if (!gst_element_link (data->audioTee, data->audioQueue)) {
 			g_printerr("Couldn't link: audioTee - audioQueue.\n");
 		}
-		if (!gst_element_link (data->audioQueue, data->audioSink)) {
-			g_printerr("Couldn't link: audioQueue - audioSink.\n");
+		if (!gst_element_link (data->audioQueue, data->audioVolume)) {
+			g_printerr("Couldn't link: audioQueue - audioVolume.\n");
+		}
+		if (!gst_element_link (data->audioVolume, data->audioSink)) {
+			g_printerr("Couldn't link: audioVolume - audioSink.\n");
 		}
 	}
 
@@ -334,6 +340,10 @@ void GstClient::pausePipeline(GstData *data) {
 
 void GstClient::stopPipeline(GstData *data) {
 	gst_element_set_state(data->pipeline, GST_STATE_READY);
+}
+
+void GstClient::muteAudio(GstData *data) {
+    g_object_set (data->audioVolume, "mute", true, NULL);
 }
 
 /*

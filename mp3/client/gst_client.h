@@ -19,7 +19,7 @@ public:
 
 	GstElement *pipeline;
 	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoColorspace, *videoSink, *videoQueue;
-	GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink, *audioQueue;
+	GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink, *audioQueue, *audioVolume;
 	GstCaps *videoUdpCaps, *audioUdpCaps, *videoDecCaps, *audioDecCaps;
 	GstElement /**jitterBuffer,*/ *jitterTee, *jitterAppSink, *jitterQueue, *videoAppQueue;
 	GstElement *videoTee, *videoAppSink, *videoDecAppQueue, *videoDecQueue;
@@ -50,6 +50,7 @@ public:
 	static void pausePipeline(GstData *data);
 	static void rewindPipeline(GstData *data);
 	static void fastForwardPipeline(GstData *data);
+	static void muteAudio(GstData *data);
 
 	static char* getFilePathInHomeDirectory(const char* directory, const char* filename);
 };
