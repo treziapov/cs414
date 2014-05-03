@@ -18,7 +18,7 @@ public:
 	gchar *serverIp, *clientIp;
 
 	GstElement *pipeline;
-	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoSink, *videoQueue;
+	GstElement *videoUdpSource, *videoRtpDepay, *videoDecoder, *videoColorspace, *videoSink, *videoQueue;
 	GstElement *audioUdpSource, *audioRtpDepay, *audioDecoder, *audioSink, *audioQueue;
 	GstCaps *videoUdpCaps, *audioUdpCaps, *videoDecCaps, *audioDecCaps;
 	GstElement /**jitterBuffer,*/ *jitterTee, *jitterAppSink, *jitterQueue, *videoAppQueue;

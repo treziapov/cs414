@@ -17,25 +17,19 @@
 #include "gst_client.h"
 
 GtkWidget *mainWindow;
-GtkWidget *videoWindow_server1;
-GtkWidget *videoWindow_server2;
-GtkWidget *videoMode_option_server1, *videoResolution_option_server1;
-GtkWidget *videoMode_option_server2, *videoResolution_option_server2;
-GtkWidget *bandwidth_entry_server1, *videoRate_entry_server1;
-GtkWidget *bandwidth_entry_server2, *videoRate_entry_server2;
-GtkWidget *current_bandwidth_server1;
-GtkWidget *current_bandwidth_server2;
-GtkWidget *current_rate_server1;
-GtkWidget *current_rate_server2;
-GtkWidget *sync_skew_server1, *ping_server1, *failures_server1;
-GtkWidget *sync_skew_server2, *ping_server2, *failures_server2;
+GtkWidget *videoWindow;
+GtkWidget *videoMode_option, *videoResolution_option;
+GtkWidget *bandwidth_entry, *videoRate_entry;
+GtkWidget *current_bandwidth;
+GtkWidget *current_rate;
+GtkWidget *syncWidget, *ping, *failures;
 
 Mode mode;
 bool started = 0;
 bool active = true;
-Settings settingsData;
-GstData gstData;
-SinkData sinkData;
+Settings settingsData1;
+GstData gstData1;
+SinkData sinkData1;
 
 /* 
 	This function is called when the GUI toolkit creates the physical mainWindow that will hold the video.
@@ -52,7 +46,7 @@ void setVideoWindow_event(GtkWidget *widget)
 		g_error("Couldn't create native mainWindow needed for GstXOverlay!");
 	}	
 
-	// Retrieve mainWindow handler from 
+	// Retrieve mainWindow handler from GDK
 	#if defined (GDK_WINDOWING_WIN32)
 		window_handle = (guintptr)GDK_WINDOW_HWND (window);
 	#elif defined (GDK_WINDOWING_QUARTZ)
@@ -63,7 +57,7 @@ void setVideoWindow_event(GtkWidget *widget)
 
 	// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
 	//gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
-	gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData.videoSink), window_handle);
+	//gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData.videoSink), window_handle);
 }
 
 
@@ -106,22 +100,22 @@ void updateOptions(GtkWidget *widget, gpointer data){
 		gtk_entry_set_text (GTK_ENTRY(videoRate_entry), "10");
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), FALSE);
 
-		settingsData.rate = 10;
-		settingsData.mode = 2;
-		gstData.mode = (Mode)2;
+		settingsData1.rate = 10;
+		settingsData1.mode = 2;
+		gstData1.mode = (Mode)2;
 	}
 	else{
 		active=true;
 		gtk_entry_set_text (GTK_ENTRY(videoRate_entry), "15");
 		gtk_entry_set_editable(GTK_ENTRY(videoRate_entry), TRUE);
 
-		settingsData.rate = 15;
-		settingsData.mode = 1;
-		gstData.mode = (Mode)1;
+		settingsData1.rate = 15;
+		settingsData1.mode = 1;
+		gstData1.mode = (Mode)1;
 	}
 
 	if(started != 0){
-		int retval = switchMode(&settingsData);
+		int retval = switchMode(&settingsData1);
 
 		if(retval == CONNECTION_ERROR){
 			//report connection error or server resource error
@@ -141,10 +135,10 @@ void updateOptions(GtkWidget *widget, gpointer data){
 				                                 )));
 		} 
 		else {
-			GstClient::stopAndFreeResources(&gstData);
-			GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
-			GstClient::buildPipeline(&gstData);
-			GstClient::playPipeline(&gstData);
+			GstClient::stopAndFreeResources(&gstData1);
+			GstClient::initPipeline(&gstData1, settingsData1.videoPort, settingsData1.audioPort, &sinkData1);
+			GstClient::buildPipeline(&gstData1);
+			GstClient::playPipeline(&gstData1);
 			setVideoWindow_event(videoWindow);
 		}
 	}
@@ -152,13 +146,13 @@ void updateOptions(GtkWidget *widget, gpointer data){
 
 void updateResolution(GtkWidget * widget, gpointer data){
 	if(started == 0){
-		if(settingsData.resolution == R240){
-			settingsData.resolution = R480;
+		if(settingsData1.resolution == R240){
+			settingsData1.resolution = R480;
 		}else{
-			settingsData.resolution = R240;
+			settingsData1.resolution = R240;
 		}
 	}else{
-		if(settingsData.resolution == R240){
+		if(settingsData1.resolution == R240){
 			gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 0);
 		}else{
 			gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 1);
@@ -170,10 +164,10 @@ void playVideo(GtkWidget *widget,  gpointer data){
 	if(started == 0){
 		printf ("playVideo: starting new connection.\n");
 
-		int retval = startStream(&settingsData);
-		GstClient::initPipeline(&gstData, settingsData.videoPort, settingsData.audioPort, &sinkData);
-		GstClient::buildPipeline(&gstData);
-		GstClient::setPipelineToRun(&gstData);
+		int retval = startStream(&settingsData1);
+		GstClient::initPipeline(&gstData1, settingsData1.videoPort, settingsData1.audioPort, &sinkData1);
+		GstClient::buildPipeline(&gstData1);
+		GstClient::setPipelineToRun(&gstData1);
 		setVideoWindow_event(videoWindow);
 
 		if(retval == 0){
@@ -196,39 +190,39 @@ void playVideo(GtkWidget *widget,  gpointer data){
 	}
 	else{
 		//send resume
-		GstClient::setPipelineToRun(&gstData);
-		resumeStream();
+		GstClient::setPipelineToRun(&gstData1);
+		resumeStream(&settingsData1);
 	}
 }
 
 void pauseVideo(GtkWidget *widget,  gpointer data){
 	printf("clicked PAUSE stream\n");
-	pauseStream();
-	GstClient::pausePipeline(&gstData);
+	pauseStream(&settingsData1);
+	GstClient::pausePipeline(&gstData1);
 }
 
 void fastForwardVideo(GtkWidget *widget,  gpointer data){
 	printf("clicked FAST FORWARD video\n");
-	fastforwardStream();
-	GstClient::playPipeline(&gstData);
+	fastforwardStream(&settingsData1);
+	GstClient::playPipeline(&gstData1);
 }
 
 void rewindVideo(GtkWidget *widget,  gpointer data){
 	printf("clicked REWIND video\n");
-	rewindStream();
-	GstClient::playPipeline(&gstData);
+	rewindStream(&settingsData1);
+	GstClient::playPipeline(&gstData1);
 }
 
 void stopVideo(GtkWidget *widget, gpointer data){
 	printf("clicked STOP stream\n");
 	started=0;
-	stopStream();
-	GstClient::stopAndFreeResources(&gstData);
+	stopStream(&settingsData1);
+	GstClient::stopAndFreeResources(&gstData1);
 }
 
 void updateBandwidth(GtkWidget *widget, gpointer data){
 	saveBandwidth(atoi(GTK_ENTRY(bandwidth_entry)->text));
-	settingsData.bandwidth = atoi(GTK_ENTRY(bandwidth_entry)->text);
+	settingsData1.bandwidth = atoi(GTK_ENTRY(bandwidth_entry)->text);
 
 	//int retval = changeResources(&settingsData);
 	//if(retval == CONNECTION_ERROR){
@@ -252,11 +246,11 @@ void updateBandwidth(GtkWidget *widget, gpointer data){
 
 void updateVideo(GtkWidget *widget, gpointer data){
 	int rate = atoi(GTK_ENTRY(videoRate_entry)->text);
-	if(settingsData.mode == ACTIVE){
+	if(settingsData1.mode == ACTIVE){
 		if(rate >= 15 && rate <= 25){
-			settingsData.rate = rate;
+			settingsData1.rate = rate;
 
-			int retval = changeResources(&settingsData);
+			int retval = changeResources(&settingsData1);
 			if(retval == CONNECTION_ERROR){
 				//report connection error
 				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
@@ -288,7 +282,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 	}
 	else{
 		//don't need to check or set rate. Rate is set to 10 at switch
-		int retval = changeResources(&settingsData);
+		int retval = changeResources(&settingsData1);
 		if(retval == CONNECTION_ERROR){
 			//report connection error
 			gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
@@ -318,13 +312,13 @@ void updateVideo(GtkWidget *widget, gpointer data){
 gboolean refreshText(void * ptr){
 	char buffer[512];
 	if(active){
-		GstClockTime skew = abs(sinkData.videoTSD - sinkData.audioTSD);
+		GstClockTime skew = abs(sinkData1.videoTSD - sinkData1.audioTSD);
 		sprintf(buffer, "Current skew: %dms", skew);
 		gtk_label_set_text(GTK_LABEL(syncWidget), buffer);
 	}
-	sprintf(buffer, "Current end to end delay: %dms", sinkData.ping);
+	sprintf(buffer, "Current end to end delay: %dms", sinkData1.ping);
 	gtk_label_set_text(GTK_LABEL(ping), buffer);
-	float ratio = (sinkData.failures / (float)(sinkData.failures + sinkData.successes)) * 100;
+	float ratio = (sinkData1.failures / (float)(sinkData1.failures + sinkData1.successes)) * 100;
 	sprintf(buffer, "Total packets lost: %f%%", ratio);
 	gtk_label_set_text(GTK_LABEL(failures), buffer);
 
@@ -334,7 +328,7 @@ gboolean refreshText(void * ptr){
 /* 
 	Set up initial UI 
 */
-
+/*
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *mainBoxBothServers;
@@ -409,6 +403,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	updateVideo_button_server1 = gtk_button_new_with_label("Update Video 1 Stream");
 
 	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
+
 
 	// Layout
 	videoControlsServer1 = gtk_hbox_new (FALSE, 0);
@@ -567,7 +562,9 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	g_timeout_add(500, refreshText, NULL);
 }
-/*void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
+*/
+
+void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
 	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
 	GtkWidget *mainHBox;		// Hbox, holds video window and option box
@@ -598,7 +595,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	videoWindow = gtk_drawing_area_new();
 	gtk_widget_set_double_buffered(videoWindow, FALSE);
-	//g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
+	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
 
 	// Set up options
 	videoMode_option = gtk_combo_box_new_text();
@@ -613,11 +610,13 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 0);
 	g_signal_connect(G_OBJECT(videoResolution_option), "changed", G_CALLBACK(updateResolution), NULL);
 
-	char buffer[16];
+	char buffer[48];
 	videoRate_entry = gtk_entry_new();
 	bandwidth_entry = gtk_entry_new();
-	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), itoa(settingsData.rate, buffer, 10));
-	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), itoa(settingsData.bandwidth, buffer, 10));
+	sprintf(buffer, "%d", settingsData1.rate);
+	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), buffer);
+	sprintf(buffer, "%d", settingsData1.bandwidth);
+	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), buffer);
 
 	playVideoFile_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
@@ -680,30 +679,30 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_widget_realize(videoWindow);
 
 	g_timeout_add(500, refreshText, NULL);
-}*/
+}
 
 /*
 	Main Method
 */
 int main(int argc, char* argv[])
 {
-	settingsData.bandwidth = getBandwidth();
-	settingsData.remainingBandwidth = settingsData.bandwidth;
-	settingsData.ip = argv[1];	// TODO: parameterize
-	settingsData.mode = ACTIVE;
-	settingsData.rate = 15;
-	settingsData.resolution = R240;
-	gstData.mode = ACTIVE;
-	gstData.serverIp = argv[1];
-	gstData.clientIp = argv[2];
+	settingsData1.bandwidth = getBandwidth();
+	settingsData1.remainingBandwidth = settingsData.bandwidth;
+	settingsData1.ip = argv[1];	// TODO: parameterize
+	settingsData1.mode = ACTIVE;
+	settingsData1.rate = 15;
+	settingsData1.resolution = R240;
+	gstData1.mode = ACTIVE;
+	gstData1.serverIp = argv[1];
+	gstData1.clientIp = argv[2];
 
 	printf ("Server on '%s', client on '%s'.\n", argv[1], argv[2]);
 
-	sinkData.videoTSD = 0;
-	sinkData.audioTSD = 0;
-	sinkData.ping = 0;
-	sinkData.failures = 0;
-	sinkData.successes = 1;
+	sinkData1.videoTSD = 0;
+	sinkData1.audioTSD = 0;
+	sinkData1.ping = 0;
+	sinkData1.failures = 0;
+	sinkData1.successes = 1;
 
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
@@ -715,6 +714,6 @@ int main(int argc, char* argv[])
 
     gtk_main();
 
-	GstClient::stopAndFreeResources(&gstData);
+	GstClient::stopAndFreeResources(&gstData1);
     return 0;
 }

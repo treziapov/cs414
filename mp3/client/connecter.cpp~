@@ -27,8 +27,8 @@ void connect(Settings * settingsData){
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	printf ("Trying to connect to %s:%d.\n", settingsData->ip, 6000);
-	getaddrinfo(settingsData->ip, "6000", &hints, &result);
+	printf ("Trying to connect to %s:%d.\n", settingsData->ip, 8000);
+	getaddrinfo(settingsData->ip, "8000", &hints, &result);
 
 	for (struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 		ConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -207,7 +207,7 @@ int changeResources(Settings * settingsData){
 			return 0;
 		}else{
 			//The server does not have enough bandwidth, stop streaming
-			stopStream();
+			stopStream(settingsData);
 
 			return CONNECTION_ERROR;
 		}

@@ -119,10 +119,10 @@ void GstServer::initPipeline(GstData *data) {
 void GstServer::configurePipeline(GstData *data) {
 	gchar *videoFilePath;
 	if (data->resolution == R240) {
-		videoFilePath = "mjpeg_320x240.avi";
+		videoFilePath = (gchar *)"mjpeg_320x240.avi";
 	}
 	else {
-		videoFilePath = "mjpeg_640x480.avi";
+		videoFilePath = (gchar *)"mjpeg_640x480.avi";
 	}
 
 	GstCaps *videoRateCaps = gst_caps_new_simple (
@@ -141,7 +141,9 @@ void GstServer::configurePipeline(GstData *data) {
 	g_print ("configurePipeline: streaming file '%s' to %s, on ports %d and %d.\n", 
 		videoFilePath, data->clientIp, data->videoPort, data->audioPort);
 
-	delete videoFilePath;
+	
+	//delete videoFilePath;
+	
 }
 
 void GstServer::buildPipeline(GstData *data) {
