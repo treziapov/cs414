@@ -241,8 +241,8 @@ void init_listener(int totalBandwidth, int port){
 			pthread_create(&thread, NULL, handleConnection, (void *)data);
 			
 			currentPort++;
-			videoPort++;
-			audioPort++;
+			//videoPort++;
+			//audioPort++;
 			close(sock_client);
 			printf("test2\n");
 		}

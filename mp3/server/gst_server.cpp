@@ -141,9 +141,6 @@ void GstServer::configurePipeline(GstData *data) {
 	g_print ("configurePipeline: streaming file '%s' to %s, on ports %d and %d.\n", 
 		videoFilePath, data->clientIp, data->videoPort, data->audioPort);
 
-	
-	//delete videoFilePath;
-	
 }
 
 void GstServer::buildPipeline(GstData *data) {
@@ -157,7 +154,7 @@ void GstServer::buildPipeline(GstData *data) {
 			data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL);
 		if (!gst_element_link_many(data->audioQueue, data->audioRate, 
 				data->audioCapsFilter, data->audioEncoder, data->audioRtpPay, data->audioUdpSink, NULL)) {
-					g_printerr ("Failed to link audio streaming pipeline.\n");
+			g_printerr ("Failed to link audio streaming pipeline.\n");
 		}
 	}
 	else {
@@ -267,8 +264,8 @@ void GstServer::stopPipeline(GstData *data) {
 }
 
 /*
-Send a seek event for navigating the video content
-i.e. fast-forwarding, rewinding
+	Send a seek event for navigating the media content
+	i.e. fast-forwarding, rewinding
 */
 void sendSeekEvent(GstData *data) {
 	gint64 position;
@@ -293,7 +290,6 @@ void sendSeekEvent(GstData *data) {
 
 	// Send the event
 	gst_element_send_event (data->pipeline, seek_event);
-	//gst_element_send_event (data->audioUdpSink, seek_event);
 	g_print ("Current playbackRate: %g\n", data->playbackRate);
 }
 

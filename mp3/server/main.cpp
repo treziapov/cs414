@@ -34,12 +34,11 @@ int getBandwidth(){
 }
 
 int main(int argc, char *argv[]){
-	if (argc != 2) {
-		printf("usage: ./streamer [starting port]\n");
+	if (argc != 1) {
+		printf("usage: ./streamer\n");
 		return 0;
 	}
-	int port = atoi(argv[1]);
-
+	
 	int bandwidth = getBandwidth();
 	printf("server bandwidth: %d.\n", bandwidth);
 
@@ -47,7 +46,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	init_listener(bandwidth, port);
+	init_listener(bandwidth);
 
 	return 0;
 }

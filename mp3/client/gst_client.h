@@ -51,6 +51,7 @@ public:
 	static void rewindPipeline(GstData *data);
 	static void fastForwardPipeline(GstData *data);
 	static void muteAudio(GstData *data);
+	static void unmuteAudio(GstData *data);
 
 	static char* getFilePathInHomeDirectory(const char* directory, const char* filename);
 };

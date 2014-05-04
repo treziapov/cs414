@@ -343,7 +343,8 @@ void GstClient::muteAudio(GstData *data) {
 }
 
 void GstClient::unmuteAudio(GstData *data) {
-    g_object_set (data->audioVolume, 1.0, true, NULL);
+    g_object_set (data->audioVolume, "mute", false, "volume", 1.0, NULL);
+    
 }
 
 /*

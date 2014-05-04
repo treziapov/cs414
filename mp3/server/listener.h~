@@ -55,7 +55,7 @@ typedef struct ThreadData{
 	GstData *gstData;
 } ThreadData;
 
-void init_listener(int totalBandwidth);
+void init_listener(int totalBandwidth, int port);
 int calculateResources(Resources rsc, Request req);
 Client * createClient(Resources & resource, int clientBandwidth, int clientPort);
 void * handleConnection(void * ptr);

@@ -127,8 +127,6 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
 		data->clientIp, videoPort, audioPort);
 
-
-	
 	if (!data->pipeline)
         g_printerr("Could not create pipeline");
     if(!data->videoUdpSource)
@@ -342,6 +340,11 @@ void GstClient::stopPipeline(GstData *data) {
 
 void GstClient::muteAudio(GstData *data) {
     g_object_set (data->audioVolume, "mute", true, NULL);
+}
+
+void GstClient::unmuteAudio(GstData *data) {
+    g_object_set (data->audioVolume, "mute", false, "volume", 1.0, NULL);
+    
 }
 
 /*

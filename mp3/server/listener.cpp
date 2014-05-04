@@ -102,7 +102,7 @@ Client * findClient(int port){
 	return NULL;
 }
 
-void init_listener(int totalBandwidth, int port){
+void init_listener(int totalBandwidth){
 	int basePort = 6000;
 
 	resource.totalBandwidth = totalBandwidth;
