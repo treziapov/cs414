@@ -639,9 +639,10 @@ gboolean refreshText_server1(void * ptr){
 	}
 	sprintf(buffer, "Current end to end delay: %dms", (int)sinkData1.ping);
 	gtk_label_set_text(GTK_LABEL(ping_server1), buffer);
+    //printf("Sinkdata1 failures: %f Sinkdata1 successes: %f\n", (float)sinkData1.failures, (float)sinkData1.successes);
 	float ratio = (sinkData1.failures / (float)(sinkData1.failures + sinkData1.successes)) * 100;
 	sprintf(buffer, "Total packets lost: %f%%", ratio);
-	gtk_label_set_text(GTK_LABEL(failures_server2), buffer);
+	gtk_label_set_text(GTK_LABEL(failures_server1), buffer);
 
 	return (gboolean)true;
 }
@@ -655,6 +656,7 @@ gboolean refreshText_server2(void * ptr){
 	}
 	sprintf(buffer, "Current end to end delay: %dms", (int)sinkData2.ping);
 	gtk_label_set_text(GTK_LABEL(ping_server2), buffer);
+    //printf("Sinkdata2 failures: %f Sinkdata2 successes: %f\n", (float)sinkData2.failures, (float)sinkData2.successes);
 	float ratio = (sinkData2.failures / (float)(sinkData2.failures + sinkData2.successes)) * 100;
 	sprintf(buffer, "Total packets lost: %f%%", ratio);
 	gtk_label_set_text(GTK_LABEL(failures_server2), buffer);
