@@ -201,7 +201,7 @@ void updateOptions(GtkWidget *widget, gpointer data){
 
 			if(retval == CONNECTION_ERROR){
 				//report connection error or server resource error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 						                             GTK_DIALOG_DESTROY_WITH_PARENT ,
 						                             GTK_MESSAGE_ERROR,
 						                             GTK_BUTTONS_NONE,
@@ -209,7 +209,7 @@ void updateOptions(GtkWidget *widget, gpointer data){
 						                             )));
 			}else if(retval == RESOURCES_ERROR){
 				//report client side error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 						                             GTK_DIALOG_DESTROY_WITH_PARENT ,
 						                             GTK_MESSAGE_ERROR,
 						                             GTK_BUTTONS_NONE,
@@ -317,14 +317,14 @@ void playVideo(GtkWidget *widget,  gpointer data){
 				started_server2=1;
 			}else if(retval == CONNECTION_ERROR){
 				//report connection error or server resource error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
 					GTK_DIALOG_DESTROY_WITH_PARENT ,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_NONE,
 					"Connection error or server resource error")));
 			}else{
 				//report client side error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new (GTK_WINDOW(mainWindow),
 		            GTK_DIALOG_DESTROY_WITH_PARENT ,
 		            GTK_MESSAGE_ERROR,
 		            GTK_BUTTONS_NONE,
@@ -511,7 +511,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 				int retval = changeResources(&settingsData2);
 				if(retval == CONNECTION_ERROR){
 					//report connection error
-					gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+					gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 			                                     GTK_DIALOG_DESTROY_WITH_PARENT ,
 			                                     GTK_MESSAGE_ERROR,
 			                                     GTK_BUTTONS_NONE,
@@ -520,7 +520,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 					started_server2 = 0;
 				}else if(retval == RESOURCES_ERROR){
 					//report resources error
-					gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+					gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 			                                     GTK_DIALOG_DESTROY_WITH_PARENT ,
 			                                     GTK_MESSAGE_ERROR,
 			                                     GTK_BUTTONS_NONE,
@@ -543,7 +543,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 			int retval = changeResources(&settingsData2);
 			if(retval == CONNECTION_ERROR){
 				//report connection error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 			                                     GTK_DIALOG_DESTROY_WITH_PARENT ,
 			                                     GTK_MESSAGE_ERROR,
 			                                     GTK_BUTTONS_NONE,
@@ -552,7 +552,7 @@ void updateVideo(GtkWidget *widget, gpointer data){
 				started_server2 = 0;
 			}else if(retval == RESOURCES_ERROR){
 				//report resources error
-				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow2),
+				gtk_dialog_run(GTK_DIALOG(gtk_message_dialog_new          (GTK_WINDOW(mainWindow),
 			                                     GTK_DIALOG_DESTROY_WITH_PARENT ,
 			                                     GTK_MESSAGE_ERROR,
 			                                     GTK_BUTTONS_NONE,
@@ -723,7 +723,7 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	mainBoxServer1 = gtk_vbox_new (FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (mainBoxServer1), mainHBoxServer1, TRUE, TRUE, 0);
 	gtk_box_pack_start (GTK_BOX (mainBoxServer1), videoControlsServer1, FALSE, FALSE, 2);
-	//gtk_box_pack_start (GTK_BOX (mainBoxBothServers), mainBoxServer1, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (mainBoxBothServers), mainBoxServer1, TRUE, TRUE, 0);
 	
 
 
@@ -752,9 +752,9 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	ping_server2 = gtk_label_new("Current end to end delay: 0ms");
 	failures_server2 = gtk_label_new("Packets lost: 0");
 
-	gtk_init(&argc, &argv);
+	//gtk_init(&argc, &argv);
    
-	mainWindow2 = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	//mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	//g_signal_connect(G_OBJECT(mainWindow), "delete-event", G_CALLBACK (gtkEnd_event), videoData);
 
 	videoWindowServer2 = gtk_drawing_area_new();
