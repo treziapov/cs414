@@ -342,6 +342,10 @@ void GstClient::muteAudio(GstData *data) {
     g_object_set (data->audioVolume, "mute", true, NULL);
 }
 
+void GstClient::unmuteAudio(GstData *data) {
+    g_object_set (data->audioVolume, 1.0, true, NULL);
+}
+
 /*
 Send a seek event for navigating the video content
 i.e. fast-forwarding, rewinding
