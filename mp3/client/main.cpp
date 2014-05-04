@@ -34,6 +34,14 @@ GtkWidget *current_rate_server2;
 GtkWidget *sync_skew_server2, *ping_server2, *failures_server2;
 
 
+//0 = STOPPED/NOT PLAYING
+//1 = PAUSED
+//2 = PLAYING NOT MUTED
+//3 = PLAYING MUTED
+int video1_state = 0; 
+int video2_state = 0;
+
+
 Mode mode;
 bool started_server1 = 0;
 bool active_server1 = true;
@@ -267,7 +275,7 @@ void playVideo(GtkWidget *widget,  gpointer data){
 
 	
 	int server = GPOINTER_TO_INT(data);
-	;
+	
 	if(server == 1){
 		if(started_server1 == 0){
 			printf ("playVideo: starting new connection for server 1.\n");
@@ -275,6 +283,11 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			int retval = startStream(&settingsData1);
 			GstClient::initPipeline(&gstData1, settingsData1.videoPort, settingsData1.audioPort, &sinkData1);
 			GstClient::buildPipeline(&gstData1);
+			video1_state=2;
+			if(video2_state == 2){ //video2 was not muted
+				GstClient::muteAudio(&gstData2);
+				video2_state = 3;
+			}
 			GstClient::setPipelineToRun(&gstData1);
 			setVideoWindow_event(videoWindowServer1, GINT_TO_POINTER(1));
 
@@ -295,10 +308,16 @@ void playVideo(GtkWidget *widget,  gpointer data){
 		            GTK_BUTTONS_NONE,
 		            "There was a client-side error.")));
 			}
+			
 		}
 		else{
 			//send resume
 			GstClient::setPipelineToRun(&gstData1);
+			video1_state = 2;
+			if(video2_state == 2){ //video2 was not muted
+				GstClient::muteAudio(&gstData2);
+				video2_state = 3;
+			}
 			resumeStream(&settingsData1);
 		}
 	}
@@ -310,6 +329,12 @@ void playVideo(GtkWidget *widget,  gpointer data){
 			int retval = startStream(&settingsData2);
 			GstClient::initPipeline(&gstData2, settingsData2.videoPort, settingsData2.audioPort, &sinkData2);
 			GstClient::buildPipeline(&gstData2);
+
+			video2_state = 2;
+			if(video1_state == 2){ //video1 was not muted
+				GstClient::muteAudio(&gstData1);
+				video2_state = 3;
+			}
 			GstClient::setPipelineToRun(&gstData2);
 			setVideoWindow_event(videoWindowServer2, GINT_TO_POINTER(2));
 
@@ -330,9 +355,17 @@ void playVideo(GtkWidget *widget,  gpointer data){
 		            GTK_BUTTONS_NONE,
 		            "There was a client-side error.")));
 			}
+
+			
 		}
 		else{
 			//send resume
+
+			video2_state = 2;
+			if(video1_state == 2){ //video1 was not muted
+				GstClient::muteAudio(&gstData1);
+				video2_state = 3;
+			}
 			GstClient::setPipelineToRun(&gstData2);
 			resumeStream(&settingsData2);
 		}
@@ -342,6 +375,12 @@ void playVideo(GtkWidget *widget,  gpointer data){
 void pauseVideo(GtkWidget *widget,  gpointer data){
 	int server = GPOINTER_TO_INT(data);
 	if(server == 1){
+
+		video1_state = 1;
+		if(video2_state == 3){ //video2 was muted
+			GstClient::unmuteAudio(&gstData2);
+			video2_state = 2;
+		}
 		printf("clicked PAUSE stream 1\n");
 		pauseStream(&settingsData1);
 		GstClient::pausePipeline(&gstData1);
@@ -349,6 +388,12 @@ void pauseVideo(GtkWidget *widget,  gpointer data){
 
 	
 	if(server == 2){
+
+		video2_state = 1;
+		if(video1_state == 3){ //video2 was muted
+			GstClient::unmuteAudio(&gstData1);
+			video2_state = 2;
+		}
 		printf("clicked PAUSE stream 2\n");
 		pauseStream(&settingsData2);
 		GstClient::pausePipeline(&gstData2);
@@ -359,12 +404,13 @@ void fastForwardVideo(GtkWidget *widget,  gpointer data){
 
 	int server = GPOINTER_TO_INT(data);
 	if(server == 1){
+		
 		printf("clicked FAST FORWARD video 1\n");
 		fastforwardStream(&settingsData1);
 		GstClient::playPipeline(&gstData1);
 
 	}
-	if(server == 1){
+	if(server == 2){
 		printf("clicked FAST FORWARD video 2\n");
 		fastforwardStream(&settingsData2);
 		GstClient::playPipeline(&gstData2);
@@ -375,12 +421,13 @@ void rewindVideo(GtkWidget *widget,  gpointer data){
 
 	int server = GPOINTER_TO_INT(data);
 	if(server == 1){
+		video1_state = 0;
 		printf("clicked REWIND video 1\n");
 		rewindStream(&settingsData1);
 		GstClient::playPipeline(&gstData1);
 
 	}
-	if(server == 1){
+	if(server == 2){
 		printf("clicked REWIND video 2\n");
 		rewindStream(&settingsData2);
 		GstClient::playPipeline(&gstData2);
@@ -392,13 +439,23 @@ void stopVideo(GtkWidget *widget, gpointer data){
 
 	int server = GPOINTER_TO_INT(data);
 	if(server == 1){
+		video1_state = 0;
+		if(video2_state == 3){ //video2 was muted
+			GstClient::unmuteAudio(&gstData2);
+			video2_state = 2
+		}
 		printf("clicked STOP stream 1\n");
 		started_server1=0;
 		stopStream(&settingsData1);
 		GstClient::stopAndFreeResources(&gstData1);
 
 	}
-	if(server == 1){
+	if(server == 2){
+		video2_state = 0;
+		if(video1_state = 3){
+			GstClient::unmuteAudio(&gstData1);
+			video1_state = 2;
+		}
 		printf("clicked STOP stream 2\n");
 		started_server2=0;
 		stopStream(&settingsData2);
