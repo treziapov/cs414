@@ -8,7 +8,9 @@
 
 const gchar* GstClient::projectDirectory = "/Documents/GitHub/cs414/mp2/client/cs414_mp2_clientside/";
 
-SinkData * globalData;
+SinkData * globalDataServer1;
+SinkData * globalDataServer2;
+int flag_first_or_second_server = 0;
 
 char* GstClient::getFilePathInHomeDirectory(const char* directory, const char* filename) {
 	char* home = getenv("HOMEPATH");
@@ -64,21 +66,37 @@ void jitterBuffer(GstElement * sink, GstData * data){
 	if(buffer){
 		GstClockTime timestamp = GST_BUFFER_TIMESTAMP(buffer);
 		GstClockTime decodeTimestamp = gst_clock_get_time(gst_element_get_clock(sink));
-		sinkData->ping = (decodeTimestamp - timestamp) / GST_MSECOND;
+		sinkData->ping = (GstClockTime)(((unsigned int)timestamp - (unsigned int)decodeTimestamp) / (unsigned int)GST_MSECOND);
+        printf("decodeTimestamp: %u timestamp: %u\n", (unsigned int)decodeTimestamp, (unsigned int)timestamp);
 	}
 
 	sinkData->successes++;
 }
 
-gboolean jitterEventHandler(GstPad * pad, GstObject * parent, GstEvent * event){
-	globalData->failures++;
+gboolean jitterEventHandlerServer1(GstPad * pad, GstObject * parent, GstEvent * event){
+	
+	globalDataServer1->failures++;
+	
+	return (gboolean)true;
+}
+
+gboolean jitterEventHandlerServer2(GstPad * pad, GstObject * parent, GstEvent * event){
+	
+	globalDataServer2->failures++;
+	
+	
 	return (gboolean)true;
 }
 
 void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkData * sinkData) {
 	gst_init (NULL, NULL);
 
-	globalData = sinkData;
+	if(flag_first_or_second_server == 0){
+		globalDataServer1 = sinkData;
+	}
+	else{
+		globalDataServer2 = sinkData;
+	}
 
 	data->videoUdpSource = gst_element_factory_make ("udpsrc", "videoUdpSource");
 	data->videoUdpCaps = gst_caps_new_simple ("application/x-rtp", NULL);
@@ -122,8 +140,12 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
 
 	GstPad * appsrcPad = gst_element_get_static_pad(GST_ELEMENT(data->jitterBuffer), "src");
-	gst_pad_set_event_function(appsrcPad, (GstPadEventFunction)jitterEventHandler);
-
+	if(flag_first_or_second_server == 0){
+		gst_pad_set_event_function(appsrcPad, (GstPadEventFunction)jitterEventHandlerServer1);
+	}
+	else{
+		gst_pad_set_event_function(appsrcPad, (GstPadEventFunction)jitterEventHandlerServer2);
+	}
 	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
 		data->clientIp, videoPort, audioPort);
 
@@ -174,16 +196,32 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
     if(!data->jitterQueue)
         g_printerr("Could not create jitterQueue");
 
-	g_object_set (data->videoAppSink, "emit-signals", TRUE, "caps", data->videoDecCaps, NULL);	
-	g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), globalData);
+	if(flag_first_or_second_server == 0){
+		g_object_set (data->videoAppSink, "emit-signals", TRUE, "caps", data->videoDecCaps, NULL);	
+		g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), globalDataServer1);
 
-	g_object_set (data->jitterAppSink, "emit-signals", TRUE, "caps", data->videoUdpCaps, NULL);	
-	g_signal_connect (data->jitterAppSink, "new-buffer", G_CALLBACK (jitterBuffer), globalData);
+		g_object_set (data->jitterAppSink, "emit-signals", TRUE, "caps", data->videoUdpCaps, NULL);	
+		g_signal_connect (data->jitterAppSink, "new-buffer", G_CALLBACK (jitterBuffer), globalDataServer1);
 
-	if (data->mode == Active) {
-		g_object_set (data->audioAppSink, "emit-signals", true, "caps", data->audioDecCaps, NULL);	
-		g_signal_connect (data->audioAppSink, "new-buffer", G_CALLBACK (newAudioBuffer), globalData);
+		if (data->mode == Active) {
+			g_object_set (data->audioAppSink, "emit-signals", true, "caps", data->audioDecCaps, NULL);	
+			g_signal_connect (data->audioAppSink, "new-buffer", G_CALLBACK (newAudioBuffer), globalDataServer1);
+		}
 	}
+
+	else{
+		g_object_set (data->videoAppSink, "emit-signals", TRUE, "caps", data->videoDecCaps, NULL);	
+		g_signal_connect (data->videoAppSink, "new-buffer", G_CALLBACK (newVideoBuffer), globalDataServer2);
+
+		g_object_set (data->jitterAppSink, "emit-signals", TRUE, "caps", data->videoUdpCaps, NULL);	
+		g_signal_connect (data->jitterAppSink, "new-buffer", G_CALLBACK (jitterBuffer), globalDataServer2);
+
+		if (data->mode == Active) {
+			g_object_set (data->audioAppSink, "emit-signals", true, "caps", data->audioDecCaps, NULL);	
+			g_signal_connect (data->audioAppSink, "new-buffer", G_CALLBACK (newAudioBuffer), globalDataServer2);
+		}
+	}
+	flag_first_or_second_server = 1;
 }
 
 void GstClient::buildPipeline(GstData *data) {
