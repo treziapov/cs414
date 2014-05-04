@@ -1,7 +1,7 @@
 CC = g++
 LINKER = g++
 CC_OPTS = -Wall -Wextra -Wchar-subscripts -Wimplicit -Wparentheses -Wreturn-type -Wmissing-braces -Wundef -Wshadow
-GST = `pkg-config --cflags --libs gstreamer-0.10`
+GST = `pkg-config --cflags --libs gstreamer-0.10 gstreamer-interfaces-0.10`
 GTK = `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0`
 
 EXECS = receiver

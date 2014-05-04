@@ -102,8 +102,8 @@ Client * findClient(int port){
 	return NULL;
 }
 
-void init_listener(int totalBandwidth){
-	int basePort = 8000;
+void init_listener(int totalBandwidth, int port){
+	int basePort = 6000;
 
 	resource.totalBandwidth = totalBandwidth;
 	resource.remainingBandwidth = totalBandwidth;
@@ -142,9 +142,8 @@ void init_listener(int totalBandwidth){
 	}
 	
 	int currentPort = basePort + 100;
-	int videoPort = basePort + 200;
-	int audioPort = basePort + 300;
-	
+	//int videoPort = basePort + 200;
+	//int audioPort = basePort + 300;
 	
 	while(true){
 		
@@ -189,13 +188,9 @@ void init_listener(int totalBandwidth){
 			data->resolution = newRequest.resolution;
 			data->rate = newRequest.rate;
 			data->port = currentPort;
-			data->videoPort = videoPort;
-			data->audioPort = audioPort;
 			
 			data->gstData = &currentClient->gstData;
 			data->gstData->clientIp = strdup(clientIp);
-			data->gstData->videoPort = videoPort;
-			data->gstData->audioPort = audioPort;
 			data->gstData->mode = (Mode)newRequest.mode;
 			data->gstData->videoFrameRate = newRequest.rate;
 			data->gstData->resolution = (Resolution)newRequest.resolution;
@@ -231,8 +226,13 @@ void init_listener(int totalBandwidth){
 			}
 			
 			send(sock_client, (char *)&currentPort, sizeof(int), 0);
-			send(sock_client, (char *)&videoPort, sizeof(int), 0);
-			send(sock_client, (char *)&audioPort, sizeof(int), 0);
+			//send(sock_client, (char *)&videoPort, sizeof(int), 0);
+			//send(sock_client, (char *)&audioPort, sizeof(int), 0);
+			recv(sock_client, (char *)&data->videoPort, sizeof(int), 0);
+			recv(sock_client, (char *)&data->audioPort, sizeof(int), 0);
+			
+			data->gstData->videoPort = data->videoPort;
+			data->gstData->audioPort = data->audioPort;
 			
 			data->ClientSocket = accept(new_client_socket, NULL, NULL);
 			close(new_client_socket);

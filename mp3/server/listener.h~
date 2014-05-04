@@ -58,4 +58,4 @@ typedef struct ThreadData{
 void init_listener(int totalBandwidth);
 int calculateResources(Resources rsc, Request req);
 Client * createClient(Resources & resource, int clientBandwidth, int clientPort);
-void handleConnection(void * ptr);
+void * handleConnection(void * ptr);

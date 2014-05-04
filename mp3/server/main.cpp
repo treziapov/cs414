@@ -34,8 +34,11 @@ int getBandwidth(){
 }
 
 int main(int argc, char *argv[]){
-	(void)argv;
-	(void)argc;
+	if (argc != 2) {
+		printf("usage: ./streamer [starting port]\n");
+		return 0;
+	}
+	int port = atoi(argv[1]);
 
 	int bandwidth = getBandwidth();
 	printf("server bandwidth: %d.\n", bandwidth);
@@ -44,18 +47,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 	
-	init_listener(bandwidth);
-	//GstData gstData;
-	//gstData.clientIp = "localhost";
-	//gstData.videoPort = 5000;
-	//gstData.audioPort = 5001;
-	//gstData.videoFrameRate = 10;
-	//gstData.mode = Passive;
-	//gstData.resolution = (Resolution)R240;
-	//GstServer::initPipeline(&gstData);
-	//GstServer::buildPipeline(&gstData);
-	//GstServer::configurePipeline(&gstData);
-	//GstServer::playPipeline(&gstData);
-	//GstServer::waitForEosOrError(&gstData);
+	init_listener(bandwidth, port);
+
 	return 0;
 }

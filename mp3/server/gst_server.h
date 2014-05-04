@@ -30,8 +30,6 @@ class GstData {
 
 class GstServer {
 	public:
-		static const gint DEFAULT_VIDEO_PORT = 5000;
-		static const gint DEFAULT_AUDIO_PORT = 5001;
 		static const gchar* videoName480p;
 		static const gchar* videoName240p;
 		static const gchar* videoDirectory;

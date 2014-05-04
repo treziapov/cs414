@@ -1,7 +1,7 @@
 CC = g++
 LINKER = g++
 CC_OPTS = -Wall -Wextra -Wchar-subscripts -Wimplicit -Wparentheses -Wreturn-type -Wmissing-braces -Wundef -Wshadow
-GST = `pkg-config --cflags --libs libgstinterfaces-0.10 gstreamer-0.10`
+GST = `pkg-config --cflags --libs gstreamer-0.10`
 GTK = `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0`
 
 EXECS = receiver
@@ -12,11 +12,7 @@ CODE_CLEAN = $(EXECS) $(OBJS)
 all: $(EXECS)
 
 connecter.o: connecter.cpp connecter.h
-<<<<<<< HEAD
-	$(CC) $(CC_OPTS) -c connecter.cpp $(GST) $(GTK)
-=======
 	$(CC) $(CC_OPTS) -c connecter.cpp $(GTK)
->>>>>>> 0a467d4b53fa4c1616844b8f7b50f5c635710247
 
 gst_client.o: gst_client.cpp gst_client.h
 	$(CC) $(CC_OPTS) -c gst_client.cpp $(GST) $(GTK)

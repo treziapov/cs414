@@ -10,9 +10,6 @@
 
 #include "connecter.h"
 
-//int ServerSocket;
-//int messagePort;
-
 void sendServerSignal(int signal, int ServerSocket) {
 	send(ServerSocket, (char*)&signal, sizeof(int), 0); 
 }
@@ -48,8 +45,8 @@ void connect(Settings * settingsData){
 
 	if(signal == ACCEPT){
 		recv(ConnectSocket, (char *)&settingsData->messagePort, sizeof(int), 0);
-		recv(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
-		recv(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
+		send(ConnectSocket, (char *)&settingsData->videoPort, sizeof(int), 0);
+		send(ConnectSocket, (char *)&settingsData->audioPort, sizeof(int), 0);
 		//settmessagePort = settingsData->messagePort;
 		
 		char buffer[512];
@@ -60,7 +57,6 @@ void connect(Settings * settingsData){
 		for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){
 			newConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-			
 			if(connect(newConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen) != -1){
 				break;
 			}

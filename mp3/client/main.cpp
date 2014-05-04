@@ -54,9 +54,7 @@ SinkData sinkData2;
 	and pass it to GStreamer through the XOverlay interface.
 */
 void setVideoWindow_event(GtkWidget *widget, gpointer data) 
-{
-
-	
+{	
 	GdkWindow *window = gtk_widget_get_window(widget);
 	guintptr window_handle;
 	
@@ -75,17 +73,17 @@ void setVideoWindow_event(GtkWidget *widget, gpointer data)
 	#endif
 
 	int server = GPOINTER_TO_INT(data);
-	if(server == 1){
+	if (server == 1) {
 		// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
 		//gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
 		gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData1.videoSink), window_handle);
+		printf("set video window for server 1\n");
 	}
-
-	
-	if(server == 2){
+	else if (server == 2) {
 		// Pass it to a GstElement, which implements XOverlay and forwards to the video sink
 		//gst_x_overlay_set_window_handle(GST_X_OVERLAY(gstData.videoSink), window_handle);
 		gst_x_overlay_set_xwindow_id(GST_X_OVERLAY(gstData2.videoSink), window_handle);
+		printf("set video window for server 2\n");
 	}
 }
 
@@ -265,7 +263,6 @@ void updateResolution(GtkWidget * widget, gpointer data){
 
 void playVideo(GtkWidget *widget,  gpointer data){
 
-	
 	int server = GPOINTER_TO_INT(data);
 	;
 	if(server == 1){
@@ -606,8 +603,6 @@ gboolean refreshText_server2(void * ptr){
 
 void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
 {
-	
-	
 	GtkWidget *mainBoxBothServers;
 	mainBoxBothServers = gtk_hbox_new (FALSE, 0);
 	
@@ -679,14 +674,12 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	g_signal_connect(G_OBJECT(rewindVideoFile_button_server1), "clicked", G_CALLBACK(rewindVideo), GINT_TO_POINTER(1));
 	stopVideoFile_button_server1 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
 	g_signal_connect(G_OBJECT(stopVideoFile_button_server1), "clicked", G_CALLBACK(stopVideo), GINT_TO_POINTER(1));
-
 	
 	updateBandwidth_button_server1 = gtk_button_new_with_label("Update Bandwidth ");
 	g_signal_connect(G_OBJECT(updateBandwidth_button_server1), "clicked", G_CALLBACK(updateBandwidth), GINT_TO_POINTER(1));
 	updateVideo_button_server1 = gtk_button_new_with_label("Update Video 1 Stream");
 
 	g_signal_connect(G_OBJECT(updateVideo_button_server1), "clicked", G_CALLBACK(updateVideo), GINT_TO_POINTER(1));
-
 
 	// Layout
 	videoControlsServer1 = gtk_hbox_new (FALSE, 0);
@@ -724,8 +717,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	gtk_box_pack_start (GTK_BOX (mainBoxServer1), mainHBoxServer1, TRUE, TRUE, 0);
 	gtk_box_pack_start (GTK_BOX (mainBoxServer1), videoControlsServer1, FALSE, FALSE, 2);
 	gtk_box_pack_start (GTK_BOX (mainBoxBothServers), mainBoxServer1, TRUE, TRUE, 0);
-	
-
 
 	//START VIDEO 2 CONTAINER
 	GtkWidget *mainBoxServer2;			// Vbox, holds HBox and videoControls
@@ -777,10 +768,8 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	//char buffer[16];
 	videoRate_entry_server2 = gtk_entry_new();
 	
-
 	sprintf(buffer, "%d", settingsData2.rate);
 	gtk_entry_set_text (GTK_ENTRY(videoRate_entry_server2), buffer);
-
 
 	playVideoFile_button_server2 = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(G_OBJECT(playVideoFile_button_server2), "clicked", G_CALLBACK(playVideo), GINT_TO_POINTER(2));
@@ -792,8 +781,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	g_signal_connect(G_OBJECT(rewindVideoFile_button_server2), "clicked", G_CALLBACK(rewindVideo), GINT_TO_POINTER(2));
 	stopVideoFile_button_server2 = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
 	g_signal_connect(G_OBJECT(stopVideoFile_button_server2), "clicked", G_CALLBACK(stopVideo), GINT_TO_POINTER(2));
-
-	
 	
 	//g_signal_connect(G_OBJECT(updateBandwidth_button), "clicked", G_CALLBACK(updateBandwidth), GINT_TO_POINTER(2));
 	updateVideo_button_server2 = gtk_button_new_with_label("Update Video 2 Stream");
@@ -811,9 +798,6 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 
 	//Resolution, Mode, and Rate options
 	optionsServer2 = gtk_vbox_new(FALSE, 0);
-	
-	
-	
 
 	gtk_box_pack_start (GTK_BOX (optionsServer2), gtk_label_new("Mode:"), FALSE, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (optionsServer2), videoMode_option_server2, FALSE, FALSE, 1);
@@ -851,145 +835,36 @@ void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioDa
 	g_timeout_add(500, refreshText_server2, NULL);
 }
 
-
-/*void gtkSetup(int argc, char *argv[])// VideoData *videoData, AudioData *audioData)
-{
-	GtkWidget *mainBox;			// Vbox, holds HBox and videoControls
-	GtkWidget *mainHBox;		// Hbox, holds video window and option box
-	GtkWidget *videoControls;	// Hbox, holds the buttons and the slider for video
-	
-	GtkWidget *options;			// Vbox, holds the settings options
-
-	// Video related buttons
-	GtkWidget *playVideoFile_button, *pauseVideoFile_button, *forwardVideoFile_button, *rewindVideoFile_button, *stopVideoFile_button;
-	GtkWidget *updateBandwidth_button, *updateVideo_button;
-
-	char * numstr = new char[22]; // enough to hold all numbers up to 64-bits
-	char stringHead[19] = "Current Bandwidth ";
-	sprintf(numstr, "%d", getBandwidth());
-	strcat(stringHead, numstr);
-	// Informational
-	GtkWidget *video_label = gtk_label_new("Video:");
-	current_bandwidth = gtk_label_new(stringHead);
-	current_rate = gtk_label_new("Current Rate: 15");
-	syncWidget = gtk_label_new("Current synchronization skew: 0ms");
-	ping = gtk_label_new("Current end to end delay: 0ms");
-	failures = gtk_label_new("Packets lost: 0");
-	
-	gtk_init(&argc, &argv);
-   
-	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	//g_signal_connect(G_OBJECT(mainWindow), "delete-event", G_CALLBACK (gtkEnd_event), videoData);
-
-	videoWindow = gtk_drawing_area_new();
-	gtk_widget_set_double_buffered(videoWindow, FALSE);
-	g_signal_connect(videoWindow, "realize", G_CALLBACK (setVideoWindow_event), NULL);
-
-	// Set up options
-	videoMode_option = gtk_combo_box_new_text();
-	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option), "PASSIVE");
-	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoMode_option), "ACTIVE");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(videoMode_option), 0);
-	g_signal_connect(G_OBJECT(videoMode_option), "changed", G_CALLBACK(updateOptions), NULL);
-
-	videoResolution_option = gtk_combo_box_new_text();
-	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option), "480p");
-	gtk_combo_box_prepend_text(GTK_COMBO_BOX(videoResolution_option), "240p");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(videoResolution_option), 0);
-	g_signal_connect(G_OBJECT(videoResolution_option), "changed", G_CALLBACK(updateResolution), NULL);
-
-	char buffer[48];
-	videoRate_entry = gtk_entry_new();
-	bandwidth_entry = gtk_entry_new();
-	sprintf(buffer, "%d", settingsData1.rate);
-	gtk_entry_set_text (GTK_ENTRY(videoRate_entry), buffer);
-	sprintf(buffer, "%d", settingsData1.bandwidth);
-	gtk_entry_set_text (GTK_ENTRY(bandwidth_entry), buffer);
-
-	playVideoFile_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
-	g_signal_connect(G_OBJECT(playVideoFile_button), "clicked", G_CALLBACK(playVideo), NULL);
-	pauseVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_PAUSE);
-	g_signal_connect(G_OBJECT(pauseVideoFile_button), "clicked", G_CALLBACK(pauseVideo), NULL);
-	forwardVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
-	g_signal_connect(G_OBJECT(forwardVideoFile_button), "clicked", G_CALLBACK(fastForwardVideo), NULL);
-	rewindVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
-	g_signal_connect(G_OBJECT(rewindVideoFile_button), "clicked", G_CALLBACK(rewindVideo), NULL);
-	stopVideoFile_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
-	g_signal_connect(G_OBJECT(stopVideoFile_button), "clicked", G_CALLBACK(stopVideo), NULL);
-
-	//TODO don't make NULL
-	updateBandwidth_button = gtk_button_new_with_label("Update Bandwidth");
-	g_signal_connect(G_OBJECT(updateBandwidth_button), "clicked", G_CALLBACK(updateBandwidth), NULL);
-	updateVideo_button = gtk_button_new_with_label("Update Stream");
-	
-	g_signal_connect(G_OBJECT(updateVideo_button), "clicked", G_CALLBACK(updateVideo), NULL);
-
-	// Layout
-	videoControls = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (videoControls), gtk_label_new("Play Video File:"), FALSE, FALSE, 20);
-	gtk_box_pack_start (GTK_BOX (videoControls), playVideoFile_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), rewindVideoFile_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), pauseVideoFile_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), forwardVideoFile_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (videoControls), stopVideoFile_button, FALSE, FALSE, 2);
-
-	//Resolution, Mode, and Rate options
-	options = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Bandwith (B/s):"), FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (options), bandwidth_entry, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), updateBandwidth_button, FALSE, FALSE, 2);
-
-	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Mode:"), FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (options), videoMode_option, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Resolution:"), FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (options), videoResolution_option, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), gtk_label_new("Rate:"), FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (options), videoRate_entry, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), updateVideo_button, FALSE, FALSE, 2);
-	gtk_box_pack_start (GTK_BOX (options), current_bandwidth, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), current_rate, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), syncWidget, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), ping, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (options), failures, FALSE, FALSE, 1);
-
-	mainHBox = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (mainHBox), videoWindow, TRUE, TRUE, 0);
-	gtk_box_pack_start (GTK_BOX (mainHBox), options, FALSE, FALSE, 10);
-   
-	mainBox = gtk_vbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (mainBox), mainHBox, TRUE, TRUE, 0);
-	gtk_box_pack_start (GTK_BOX (mainBox), videoControls, FALSE, FALSE, 2);
-	gtk_container_add (GTK_CONTAINER (mainWindow), mainBox);
-	gtk_window_set_default_size (GTK_WINDOW (mainWindow), 1280, 960);
-    
-	gtk_widget_show_all (mainWindow);
-	//GTK_DIALOG_DESTROY_WITH_PARENT
-	gtk_widget_realize(videoWindow);
-
-	g_timeout_add(500, refreshText, NULL);
-}*/
-
 /*
 	Main Method
 */
 int main(int argc, char* argv[])
 {
+	if (argc != 4) {
+		printf("usage: ./receiver [serverIP1] [serverIP2] [myIP]");
+		return 0;
+	}
+
 	settingsData1.bandwidth = getBandwidth();
 	settingsData1.remainingBandwidth = settingsData1.bandwidth;
-	settingsData1.ip = argv[1];	// TODO: parameterize
+	settingsData1.ip = argv[1];
 	settingsData1.mode = ACTIVE;
 	settingsData1.rate = 15;
 	settingsData1.resolution = R240;
+	settingsData1.videoPort = 6001;
+	settingsData1.audioPort = 6002;
 	gstData1.mode = ACTIVE;
 	gstData1.serverIp = argv[1];
 	gstData1.clientIp = argv[3];
 
 	settingsData2.bandwidth = getBandwidth();
 	settingsData2.remainingBandwidth = settingsData2.bandwidth;
-	settingsData2.ip = argv[2];	// TODO: parameterize
+	settingsData2.ip = argv[2];
 	settingsData2.mode = ACTIVE;
 	settingsData2.rate = 15;
 	settingsData2.resolution = R240;
+	settingsData2.videoPort = 6003;
+	settingsData2.audioPort = 6004;
 	gstData2.mode = ACTIVE;
 	gstData2.serverIp = argv[2];
 	gstData2.clientIp = argv[3];
@@ -1011,11 +886,6 @@ int main(int argc, char* argv[])
 
     gtk_init(&argc, &argv);
     gtkSetup(argc, argv);
-
-	//gstData.mode = Active;
-	//GstClient::initPipeline(&gstData, 5000, 5001, &sinkData);
-	//GstClient::buildPipeline(&gstData);
-	//GstClient::playPipeline(&gstData);
 
     gtk_main();
 

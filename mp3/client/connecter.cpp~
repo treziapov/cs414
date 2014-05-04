@@ -10,9 +10,6 @@
 
 #include "connecter.h"
 
-//int ServerSocket;
-//int messagePort;
-
 void sendServerSignal(int signal, int ServerSocket) {
 	send(ServerSocket, (char*)&signal, sizeof(int), 0); 
 }
@@ -27,8 +24,8 @@ void connect(Settings * settingsData){
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	printf ("Trying to connect to %s:%d.\n", settingsData->ip, 8000);
-	getaddrinfo(settingsData->ip, "8000", &hints, &result);
+	printf ("Trying to connect to %s:%d.\n", settingsData->ip, 6000);
+	getaddrinfo(settingsData->ip, "6000", &hints, &result);
 
 	for (struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 		ConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -60,7 +57,6 @@ void connect(Settings * settingsData){
 		for(struct addrinfo * ptr = result; ptr != NULL; ptr = ptr->ai_next){
 			newConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-			
 			if(connect(newConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen) != -1){
 				break;
 			}

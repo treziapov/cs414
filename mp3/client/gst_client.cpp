@@ -119,8 +119,6 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	sprintf (audioUri, "udp://%s:%d", data->clientIp, audioPort);
 	g_object_set (data->videoUdpSource, "uri", videoUri, "caps", data->videoUdpCaps, NULL);
 	g_object_set (data->audioUdpSource, "uri", audioUri, "caps", data->audioUdpCaps, NULL);
-	//g_object_set (data->videoUdpSource, "port", videoPort, NULL);
-	//g_object_set (data->audioUdpSource, "port", audioPort, NULL);
 	g_object_set (data->jitterBuffer, "do-lost", true, NULL);
 
 	GstPad * appsrcPad = gst_element_get_static_pad(GST_ELEMENT(data->jitterBuffer), "src");
@@ -129,8 +127,6 @@ void GstClient::initPipeline(GstData *data, int videoPort, int audioPort, SinkDa
 	printf("Streaming from server '%s', video from port %d and audio from port %d\n", 
 		data->clientIp, videoPort, audioPort);
 
-
-	
 	if (!data->pipeline)
         g_printerr("Could not create pipeline");
     if(!data->videoUdpSource)
